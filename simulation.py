@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 # Inizializing boids' initial positions and velocities
+
+
 class FlockState:
     def __init__(self):
         self.pos = np.random.rand(
@@ -189,7 +191,8 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
 def compute_obstacle_avoidance(pos):
 
     obs_vel = np.zeros_like(pos)
-    diff = pos[:, np.newaxis, :] - cfg.obstacles_const.positions[np.newaxis, :, :]
+    diff = pos[:, np.newaxis, :] - \
+        cfg.obstacles_const.positions[np.newaxis, :, :]
     distance = np.linalg.norm(diff, axis=-1)
     mask = (distance < cfg.obstacles_const.action_range) & (distance > 0)
     mask_3d = mask[:, :, np.newaxis]
@@ -212,7 +215,8 @@ def compute_predator_avoidance(flock_pos, pred_pos):
 
     safe_distance_sq = np.where(distance == 0, 1.0, distance**2)
     repulsion = diff / safe_distance_sq[:, :, np.newaxis]
-    pred_avoid_vel = (repulsion * mask_3d).sum(axis=1) * cfg.predator_const.sep_par
+    pred_avoid_vel = (repulsion * mask_3d).sum(axis=1) * \
+        cfg.predator_const.sep_par
 
     return pred_avoid_vel
 
@@ -231,7 +235,8 @@ def predator_move(flock_pos, pred_pos, pred_vel):
 # Main function
 def update_flock(flock_state: FlockState, predator_state: Predator, method: str):
 
-    diff, distance, cos_angle = compute_distances_and_fov(flock_state.pos, flock_state.vel)
+    diff, distance, cos_angle = compute_distances_and_fov(
+        flock_state.pos, flock_state.vel)
 
     match method.lower():
         case "reynolds":
@@ -246,17 +251,18 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
             raise ValueError(
                 f"Method '{method}' is invalid. Choose between 'reynolds', 'vicsek' or 'couzin'.")
 
-    pred_avoid_vel=np.zeros_like(flock_state.pos)
+    pred_avoid_vel = np.zeros_like(flock_state.pos)
 
-    if cfg.glob_const.predator_bool==True:
+    if cfg.glob_const.predator_bool == True:
         pred_vel_delta = predator_move(
             flock_state.pos, predator_state.pos, predator_state.vel)
 
-        pred_avoid_vel = compute_predator_avoidance(flock_state.pos, predator_state.pos)
+        pred_avoid_vel = compute_predator_avoidance(
+            flock_state.pos, predator_state.pos)
 
     avoid_obs_vel = np.zeros_like(flock_state.pos)
 
-    if cfg.glob_const.obstacle_bool==True:
+    if cfg.glob_const.obstacle_bool == True:
         avoid_obs_vel = compute_obstacle_avoidance(flock_state.pos)
 
     final_vel_delta = vel_delta + pred_avoid_vel + avoid_obs_vel

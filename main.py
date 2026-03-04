@@ -21,6 +21,7 @@ for t in range(cfg.glob_const.time_steps):
 
     sml.update_flock(flock, predator, cfg.glob_const.method)
 
-print(f"The datasets have been created: {pos_history.shape}, {pred_pos_history.shape}")
+print(
+    f"The datasets have been created: {pos_history.shape}, {pred_pos_history.shape}")
 
 anm.make_gif(pos_history, pred_pos_history)

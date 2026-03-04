@@ -25,7 +25,6 @@ class glob_const:
     artistic_rendition_bool: ClassVar[bool] = True
 
 
-
 @dataclass(frozen=True)
 class reynolds_const:
     coh_par: ClassVar[float] = 0.10
