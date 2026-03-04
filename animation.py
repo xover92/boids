@@ -28,76 +28,7 @@ def make_gif(pos_history, pred_pos_history):
             ax.set_ylabel('Y')
             ax.set_zlabel('Z')
 
-            # Drawing the boids
-            flock_scatter = ax.scatter(pos_history[0, :, 0],
-                                pos_history[0, :, 1],
-                                pos_history[0, :, 2],
-                                c='black', marker='^', s=20, alpha=0.7,)
-
-
-            # Drawing the predator
-            if cfg.glob_const.predator_bool==True:
-                    pred_scatter = ax.scatter(pred_pos_history[0, :, 0],
-                                        pred_pos_history[0, :, 1],
-                                        pred_pos_history[0, :, 2],
-                                        c='red', marker='^', s=60, alpha=1.0,)
-
-
-            # Drawing obstacles
-            if cfg.glob_const.obstacle_bool==True:
-                    ax.scatter(cfg.obstacles_const.positions[:, 0],
-                            cfg.obstacles_const.positions[:, 1],
-                            cfg.obstacles_const.positions[:, 2],
-                            c='red', marker='o', s=200, label="Obstacles") 
-
-
-            # # Moving the boids
-            if cfg.glob_const.moving_camera_bool==False:
-                def animate(frame):
-
-                    flock_current_pos = pos_history[frame]
-                    flock_scatter._offsets3d = (
-                        flock_current_pos[:, 0], flock_current_pos[:, 1], flock_current_pos[:, 2])
-                    
-                    pred_current_pos = pred_pos_history[frame]
-                    pred_scatter._offsets3d = (
-                        pred_current_pos[:, 0], pred_current_pos[:, 1], pred_current_pos[:, 2])
-                    
-                    return flock_scatter, pred_scatter
-
-
-
-            # Moving the boids with dynamic camera
-            if cfg.glob_const.moving_camera_bool==True:
-                def animate(frame):
-
-                    flock_current_pos = pos_history[frame]
-                    flock_scatter._offsets3d = (
-                        flock_current_pos[:, 0], flock_current_pos[:, 1], flock_current_pos[:, 2])
-                    
-                    pred_current_pos = pred_pos_history[frame]
-                    pred_scatter._offsets3d = (
-                        pred_current_pos[:, 0], pred_current_pos[:, 1], pred_current_pos[:, 2])
-                    
-                    centroid = flock_current_pos.mean(axis=0)
-                    
-                    window = 40.0 
-                    
-                    ax.set_xlim(centroid[0] - window, centroid[0] + window)
-                    ax.set_ylim(centroid[1] - window, centroid[1] + window)
-                    ax.set_zlim(centroid[2] - window, centroid[2] + window)
-                    
-                    return flock_scatter, pred_scatter
-
-
-            # Creating the gif
-            ani = animation.FuncAnimation(
-                fig, animate, frames=cfg.glob_const.time_steps, interval=100, blit=False)
-
-            # Saving the gif
-            print("The gif is loading")
-            ani.save("animation_boids.gif", writer='pillow', fps=30)
-            print("The gif is ready")
+            
         
         if cfg.glob_const.artistic_rendition_bool==True:
              fig = plt.figure(figsize=(12, 9))
@@ -138,53 +69,76 @@ def make_gif(pos_history, pred_pos_history):
  
              draw_clouds(20)
 
-            # --- RESTO DEL CODICE (Boids neri) ---
-             flock_scatter = ax.scatter(pos_history[0, :, 0],
-                                    pos_history[0, :, 1],
-                                    pos_history[0, :, 2],
-                                    c='black', marker='^', s=15, alpha=1.0)
-            
-            # --- PREDATORE ---
-             if cfg.glob_const.predator_bool:
-                 pred_scatter = ax.scatter(pred_pos_history[0, :, 0],
-                                             pred_pos_history[0, :, 1],
-                                             pred_pos_history[0, :, 2],
-                                             c='#2e0808', marker='v', s=70, alpha=1.0)
+
+    # Drawing the boids
+        flock_scatter = ax.scatter(pos_history[0, :, 0],
+                            pos_history[0, :, 1],
+                            pos_history[0, :, 2],
+                            c='black', marker='^', s=20, alpha=0.7,)
+
+
+            # Drawing the predator
+        if cfg.glob_const.predator_bool==True:
+                pred_scatter = ax.scatter(pred_pos_history[0, :, 0],
+                                    pred_pos_history[0, :, 1],
+                                    pred_pos_history[0, :, 2],
+                                    c='red', marker='^', s=60, alpha=1.0,)
+
+
             # Drawing obstacles
-             if cfg.glob_const.obstacle_bool==True:
-                     ax.scatter(cfg.obstacles_const.positions[:, 0],
-                             cfg.obstacles_const.positions[:, 1],
-                             cfg.obstacles_const.positions[:, 2],
-                             c='teal', marker='o', s=200, label="Obstacles")
+        if cfg.glob_const.obstacle_bool==True:
+                ax.scatter(cfg.obstacles_const.positions[:, 0],
+                        cfg.obstacles_const.positions[:, 1],
+                        cfg.obstacles_const.positions[:, 2],
+                        c='red', marker='o', s=200, label="Obstacles") 
 
-            # Animazione
-             def animate(frame):
-                 # Update boids
-                 flock_current_pos = pos_history[frame]
-                 flock_scatter._offsets3d = (
-                     flock_current_pos[:, 0], flock_current_pos[:, 1], flock_current_pos[:, 2])
-                
-                # Update predatore
-                 if cfg.glob_const.predator_bool:
-                     p_pos = pred_pos_history[frame]
-                     pred_scatter._offsets3d = (p_pos[:, 0], p_pos[:, 1], p_pos[:, 2])
-                
-                # Camera dinamica (se attiva nel config)
-                 if cfg.glob_const.moving_camera_bool:
-                     centroid = flock_current_pos.mean(axis=0)
-                     win = 50.0 
-                     ax.set_xlim(centroid[0] - win, centroid[0] + win)
-                     ax.set_ylim(centroid[1] - win, centroid[1] + win)
-                     ax.set_zlim(centroid[2] - win, centroid[2] + win)
+
+        # # Moving the boids
+        if cfg.glob_const.moving_camera_bool==False:
+            def animate(frame):
+
+                flock_current_pos = pos_history[frame]
+                flock_scatter._offsets3d = (
+                flock_current_pos[:, 0], flock_current_pos[:, 1], flock_current_pos[:, 2])
                     
-                 return flock_scatter, (pred_scatter if cfg.glob_const.predator_bool else flock_scatter)
+                pred_current_pos = pred_pos_history[frame]
+                pred_scatter._offsets3d = (pred_current_pos[:, 0], pred_current_pos[:, 1], pred_current_pos[:, 2])
+                    
+                return flock_scatter, pred_scatter
 
-             print("Computing artistic gif")
-             ani = animation.FuncAnimation(
-                 fig, animate, frames=cfg.glob_const.time_steps, interval=50, blit=False)
 
-             ani.save("artistic_rendition.gif", writer='pillow', fps=30)
-             print("Done.")
+
+            # Moving the boids with dynamic camera
+        if cfg.glob_const.moving_camera_bool==True:
+            def animate(frame):
+
+                flock_current_pos = pos_history[frame]
+                flock_scatter._offsets3d = (
+                    flock_current_pos[:, 0], flock_current_pos[:, 1], flock_current_pos[:, 2])
+                    
+                pred_current_pos = pred_pos_history[frame]
+                pred_scatter._offsets3d = (pred_current_pos[:, 0], pred_current_pos[:, 1], pred_current_pos[:, 2])
+                    
+                centroid = flock_current_pos.mean(axis=0)
+                    
+                window = 40.0 
+                    
+                ax.set_xlim(centroid[0] - window, centroid[0] + window)
+                ax.set_ylim(centroid[1] - window, centroid[1] + window)
+                ax.set_zlim(centroid[2] - window, centroid[2] + window)
+                    
+                return flock_scatter, pred_scatter
+
+
+            # Creating the gif
+        ani = animation.FuncAnimation(
+            fig, animate, frames=cfg.glob_const.time_steps, interval=100, blit=False)
+
+        # Saving the gif
+        print("The gif is loading")
+        ani.save("animation_boids.gif", writer='pillow', fps=30)
+        print("The gif is ready")
+
 
 
 
