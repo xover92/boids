@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-
+import pandas as pd
 # Inizializing boids' initial positions and velocities
 
 
@@ -252,8 +252,12 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
                 f"Method '{method}' is invalid. Choose between 'reynolds', 'vicsek' or 'couzin'.")
 
     pred_avoid_vel = np.zeros_like(flock_state.pos)
+    
+    pred_vel_delta = np.zeros_like([[0, 0, 0]])
+    
+    
 
-    if cfg.glob_const.predator_bool == True:
+    if cfg.commands.predator_bool == True:
         pred_vel_delta = predator_move(
             flock_state.pos, predator_state.pos, predator_state.vel)
 
@@ -262,7 +266,7 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
 
     avoid_obs_vel = np.zeros_like(flock_state.pos)
 
-    if cfg.glob_const.obstacle_bool == True:
+    if cfg.commands.obstacle_bool == True:
         avoid_obs_vel = compute_obstacle_avoidance(flock_state.pos)
 
     final_vel_delta = vel_delta + pred_avoid_vel + avoid_obs_vel
@@ -278,3 +282,37 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
     flock_state.pos += flock_state.vel
 
     predator_state.pos += predator_state.vel
+    
+    
+
+def make_csv(pos_history, vel_history):
+    
+        n_steps, n_boids, _ = pos_history.shape
+
+        
+        pos_flat = pos_history.reshape(-1, 3)
+        vel_flat = vel_history.reshape(-1, 3)
+
+
+        time_indices = np.repeat(np.arange(n_steps), n_boids)
+        boid_ids = np.tile(np.arange(n_boids), n_steps)
+
+
+        df = pd.DataFrame({
+            'step': time_indices,
+            'boid_id': boid_ids,
+            'pos_x': pos_flat[:, 0],
+            'pos_y': pos_flat[:, 1],
+            'pos_z': pos_flat[:, 2],
+            'vel_x': vel_flat[:, 0],
+            'vel_y': vel_flat[:, 1],
+            'vel_z': vel_flat[:, 2]
+        })
+        
+        df['u_x'] = df['vel_x'] - df.groupby('step')['vel_x'].transform('mean')
+        df['u_y'] = df['vel_y'] - df.groupby('step')['vel_y'].transform('mean')
+        df['u_z'] = df['vel_z'] - df.groupby('step')['vel_z'].transform('mean')
+
+
+        df.to_csv("flock_history.csv", index=False)
+        print("File flock_history.csv successfully created")

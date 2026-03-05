@@ -17,13 +17,19 @@ class glob_const:
     action_range: ClassVar[float] = 50.0
     fov_angle: ClassVar[float] = np.radians(135)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 100
+    time_steps: ClassVar[int] = 300
     method: ClassVar[str] = "reynolds"
-    obstacle_bool: ClassVar[bool] = True
-    predator_bool: ClassVar[bool] = True
-    moving_camera_bool: ClassVar[bool] = True
-    artistic_rendition_bool: ClassVar[bool] = True
 
+
+@dataclass(frozen=True)
+class commands:
+    obstacle_bool: ClassVar[bool] = False
+    predator_bool: ClassVar[bool] = False
+    moving_camera_bool: ClassVar[bool] = True
+    gif_making_bool: ClassVar[bool] = False
+    artistic_rendition_bool: ClassVar[bool] = False
+    make_csv_bool: ClassVar[bool] = True
+    plot_correlation_function: ClassVar[bool] = True
 
 @dataclass(frozen=True)
 class reynolds_const:

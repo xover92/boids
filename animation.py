@@ -9,7 +9,7 @@ import matplotlib.colors as mcolors
 
 
 def make_gif(pos_history, pred_pos_history):
-    if cfg.glob_const.artistic_rendition_bool == False:
+    if cfg.commands.artistic_rendition_bool == False:
 
         # Creating the animation
         fig = plt.figure(figsize=(10, 8))
@@ -19,7 +19,7 @@ def make_gif(pos_history, pred_pos_history):
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
 
-    if cfg.glob_const.artistic_rendition_bool == True:
+    if cfg.commands.artistic_rendition_bool == True:
         fig = plt.figure(figsize=(12, 9))
 
         # MAKING THE GRADIENT
@@ -65,45 +65,51 @@ def make_gif(pos_history, pred_pos_history):
                                pos_history[0, :, 2],
                                c='black', marker='^', s=20, alpha=0.7,)
 
+
+    pred_scatter= None
     # Drawing the predator
-    if cfg.glob_const.predator_bool == True:
+    if cfg.commands.predator_bool == True:
         pred_scatter = ax.scatter(pred_pos_history[0, :, 0],
                                   pred_pos_history[0, :, 1],
                                   pred_pos_history[0, :, 2],
                                   c='red', marker='^', s=60, alpha=1.0,)
 
         # Drawing obstacles
-    if cfg.glob_const.obstacle_bool == True:
+    if cfg.commands.obstacle_bool == True:
         ax.scatter(cfg.obstacles_const.positions[:, 0],
                    cfg.obstacles_const.positions[:, 1],
                    cfg.obstacles_const.positions[:, 2],
                    c='red', marker='o', s=200, label="Obstacles")
 
     # # Moving the boids
-    if cfg.glob_const.moving_camera_bool == False:
+    if cfg.commands.moving_camera_bool == False:
         def animate(frame):
 
             flock_current_pos = pos_history[frame]
             flock_scatter._offsets3d = (
                 flock_current_pos[:, 0], flock_current_pos[:, 1], flock_current_pos[:, 2])
-
-            pred_current_pos = pred_pos_history[frame]
-            pred_scatter._offsets3d = (
-                pred_current_pos[:, 0], pred_current_pos[:, 1], pred_current_pos[:, 2])
+            
+            
+            if pred_scatter is not None:
+                    pred_current_pos = pred_pos_history[frame]
+                    pred_scatter._offsets3d = (
+                        pred_current_pos[:, 0], pred_current_pos[:, 1], pred_current_pos[:, 2])
 
             return flock_scatter, pred_scatter
 
         # Moving the boids with dynamic camera
-    if cfg.glob_const.moving_camera_bool == True:
+    if cfg.commands.moving_camera_bool == True:
         def animate(frame):
 
             flock_current_pos = pos_history[frame]
             flock_scatter._offsets3d = (
                 flock_current_pos[:, 0], flock_current_pos[:, 1], flock_current_pos[:, 2])
 
-            pred_current_pos = pred_pos_history[frame]
-            pred_scatter._offsets3d = (
-                pred_current_pos[:, 0], pred_current_pos[:, 1], pred_current_pos[:, 2])
+            
+            if pred_scatter is not None:
+                pred_current_pos = pred_pos_history[frame]
+                pred_scatter._offsets3d = (
+                    pred_current_pos[:, 0], pred_current_pos[:, 1], pred_current_pos[:, 2])
 
             centroid = flock_current_pos.mean(axis=0)
 
