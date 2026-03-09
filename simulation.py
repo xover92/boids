@@ -78,7 +78,7 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle):
     sum_pos = (pos[np.newaxis, :, :] * mask_3d).sum(axis=1)
     centroid = sum_pos[has_neighbors] / n_neighbors[has_neighbors, np.newaxis]
     dist = np.where(distance == 0, 1.0, distance**3)
-    cohesion = diff/ dist[:, :, np.newaxis]
+    cohesion = diff / dist[:, :, np.newaxis]
     coh_vel = (cohesion * mask_3d).sum(axis=1) * cfg.reynolds_const.coh_par
     # coh_vel[has_neighbors] = (
     #     centroid - pos[has_neighbors]) * cfg.reynolds_const.coh_par
@@ -96,24 +96,25 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle):
 
     if sep_vel.any() >= cfg.glob_const.max_delta:
         vel_prov = cfg.glob_const.max_delta * sep_vel / \
-            np.linalg.norm(sep_vel, axis=1, keepdims=True)
+            np.maximum(np.linalg.norm(sep_vel, axis=1, keepdims=True), 1e-9)
 
     if sep_vel.any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel).any() >= cfg.glob_const.max_delta:
         vel_prov = cfg.glob_const.max_delta * \
-            (sep_vel+ali_vel) / np.linalg.norm(sep_vel+ali_vel, axis=1, keepdims=True)
+            (sep_vel+ali_vel) / np.maximum(np.linalg.norm(sep_vel +
+                                                          ali_vel, axis=1, keepdims=True), 1e-9)
 
     if sep_vel.any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel).any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel+coh_vel).any() >= cfg.glob_const.max_delta:
         vel_prov = cfg.glob_const.max_delta * \
-            (sep_vel+ali_vel+coh_vel) / np.linalg.norm(sep_vel +
-                                                       ali_vel+coh_vel, axis=1, keepdims=True)
-            
+            (sep_vel+ali_vel+coh_vel) / np.maximum(np.linalg.norm(sep_vel +
+                                                                  ali_vel+coh_vel, axis=1, keepdims=True), 1e-9)
+
     if sep_vel.any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel).any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel+coh_vel).any() <= cfg.glob_const.max_delta:
         vel_prov = sep_vel+ali_vel+coh_vel
 
     # White noise
     noi_vel = np.random.normal(
         loc=0.0, scale=cfg.reynolds_const.noi_par, size=(cfg.glob_const.n_boids, 3))
-    vel_delta = vel_prov + noi_vel
+    vel_delta = vel_prov #+ noi_vel
 
     return vel_delta
 
