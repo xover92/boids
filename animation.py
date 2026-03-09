@@ -113,7 +113,7 @@ def make_gif(pos_history, pred_pos_history):
 
             centroid = flock_current_pos.mean(axis=0)
 
-            window = 40.0
+            window = 80.0
 
             ax.set_xlim(centroid[0] - window, centroid[0] + window)
             ax.set_ylim(centroid[1] - window, centroid[1] + window)

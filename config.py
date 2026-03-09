@@ -14,10 +14,10 @@ class glob_const:
     max_speed: ClassVar[float] = 5.0
     min_speed: ClassVar[float] = 2.0
     max_delta: ClassVar[float] = 1.0
-    action_range: ClassVar[float] = 50.0
+    action_range: ClassVar[float] = 40.0
     fov_angle: ClassVar[float] = np.radians(135)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 300
+    time_steps: ClassVar[int] = 600
     method: ClassVar[str] = "reynolds"
 
 
@@ -26,34 +26,34 @@ class commands:
     obstacle_bool: ClassVar[bool] = False
     predator_bool: ClassVar[bool] = False
     moving_camera_bool: ClassVar[bool] = True
-    gif_making_bool: ClassVar[bool] = False
+    gif_making_bool: ClassVar[bool] = True
     artistic_rendition_bool: ClassVar[bool] = False
-    make_csv_bool: ClassVar[bool] = True
-    plot_correlation_function: ClassVar[bool] = True
+    make_csv_bool: ClassVar[bool] = False
+    plot_correlation_function: ClassVar[bool] = False
 
 @dataclass(frozen=True)
 class reynolds_const:
-    coh_par: ClassVar[float] = 0.10
+    coh_par: ClassVar[float] = 0.25
     ali_par: ClassVar[float] = 0.25
-    sep_par: ClassVar[float] = 0.35
+    sep_par: ClassVar[float] = 0.05
     noi_par: ClassVar[float] = 0.30
 
 
 @dataclass(frozen=True)
 class couzin_const:
     coh_par: ClassVar[float] = 0.1
-    ali_par: ClassVar[float] = 0.1
+    ali_par: ClassVar[float] = 0.2
     sep_par: ClassVar[float] = 0.1
     noi_par: ClassVar[float] = 0.1
-    zoa: ClassVar[float] = 25
-    zoo: ClassVar[float] = 10
+    zoa: ClassVar[float] = 35
+    zoo: ClassVar[float] = 15
     zor: ClassVar[float] = 1.0
 
 
 @dataclass(frozen=True)
 class vicsek_const:
     mex_delta: ClassVar[float] = 0.2
-    noi_par: ClassVar[float] = 0.8
+    noi_par: ClassVar[float] = 1.6
 
 
 @dataclass(frozen=True)

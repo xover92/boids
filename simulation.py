@@ -77,8 +77,11 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle):
     # Cohesion
     sum_pos = (pos[np.newaxis, :, :] * mask_3d).sum(axis=1)
     centroid = sum_pos[has_neighbors] / n_neighbors[has_neighbors, np.newaxis]
-    coh_vel[has_neighbors] = (
-        centroid - pos[has_neighbors]) * cfg.reynolds_const.coh_par
+    dist = np.where(distance == 0, 1.0, distance**3)
+    cohesion = diff/ dist[:, :, np.newaxis]
+    coh_vel = (cohesion * mask_3d).sum(axis=1) * cfg.reynolds_const.coh_par
+    # coh_vel[has_neighbors] = (
+    #     centroid - pos[has_neighbors]) * cfg.reynolds_const.coh_par
 
     # Alignement
     sum_vel = (vel[np.newaxis, :, :] * mask_3d).sum(axis=1)
@@ -87,11 +90,25 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle):
         mean_vel - vel[has_neighbors]) * cfg.reynolds_const.ali_par
 
     # Separation
-    safe_distance_sq = np.where(distance == 0, 1.0, distance**2)
+    safe_distance_sq = np.where(distance == 0, 1.0, distance**3)
     repulsion = diff / safe_distance_sq[:, :, np.newaxis]
     sep_vel = (repulsion * mask_3d).sum(axis=1) * cfg.reynolds_const.sep_par
 
-    vel_prov = coh_vel + ali_vel + sep_vel
+    if sep_vel.any() >= cfg.glob_const.max_delta:
+        vel_prov = cfg.glob_const.max_delta * sep_vel / \
+            np.linalg.norm(sep_vel, axis=1, keepdims=True)
+
+    if sep_vel.any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel).any() >= cfg.glob_const.max_delta:
+        vel_prov = cfg.glob_const.max_delta * \
+            (sep_vel+ali_vel) / np.linalg.norm(sep_vel+ali_vel, axis=1, keepdims=True)
+
+    if sep_vel.any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel).any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel+coh_vel).any() >= cfg.glob_const.max_delta:
+        vel_prov = cfg.glob_const.max_delta * \
+            (sep_vel+ali_vel+coh_vel) / np.linalg.norm(sep_vel +
+                                                       ali_vel+coh_vel, axis=1, keepdims=True)
+            
+    if sep_vel.any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel).any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel+coh_vel).any() <= cfg.glob_const.max_delta:
+        vel_prov = sep_vel+ali_vel+coh_vel
 
     # White noise
     noi_vel = np.random.normal(
@@ -109,13 +126,15 @@ def compute_vicsek(vel, distance, cos_angle):
     n_neighbors = mask.sum(axis=1)[:, np.newaxis]
     mask_3d = mask[:, :, np.newaxis]
 
-    # Aignement
+    # Alignement
     sum_vel = (vel[np.newaxis, :, :] * mask_3d).sum(axis=1)
     mean_vel = sum_vel / n_neighbors
 
     # White noise
-    noise = np.random.normal(
-        loc=0.0, scale=cfg.vicsek_const.noi_par, size=(cfg.glob_const.n_boids, 3))
+    # noise = np.random.normal(
+    #     loc=0.0, scale=cfg.vicsek_const.noi_par, size=(cfg.glob_const.n_boids, 3))
+    noise = np.random.uniform(low=-cfg.vicsek_const.noi_par/2,
+                              high=cfg.vicsek_const.noi_par/2, size=(cfg.glob_const.n_boids, 3))
 
     # Speed normalization
     target_dir = mean_vel + noise
@@ -158,7 +177,7 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
     sep_vel[has_neighbors_rep] = (
         repulsion * mask_3d_rep).sum(axis=1)[has_neighbors_rep] * cfg.couzin_const.sep_par
 
-    # Alignement
+    # Alignment
     sum_vel = (vel[np.newaxis, :, :] * mask_3d_ali).sum(axis=1)
     mean_vel = sum_vel[has_neighbors_ali] / \
         n_neighbors_ali[has_neighbors_ali, np.newaxis]
@@ -166,23 +185,49 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
         mean_vel - vel[has_neighbors_ali]) * cfg.couzin_const.ali_par
 
     # Cohesion
-    sum_pos = (pos[np.newaxis, :, :] * mask_3d_coh).sum(axis=1)
-    centroid = sum_pos[has_neighbors_coh] / \
-        n_neighbors_coh[has_neighbors_coh, np.newaxis]
-    coh_vel[has_neighbors_coh] = (
-        centroid - pos[has_neighbors_coh]) * cfg.couzin_const.coh_par
+    safe_distance = np.maximum(distance, 1e-9)
+    cohesion = diff / safe_distance[:, :, np.newaxis]
+    coh_vel[has_neighbors_coh] = -(
+        cohesion * mask_3d_coh).sum(axis=1)[has_neighbors_coh] * cfg.couzin_const.coh_par
 
-    # Couzin priorities model
-    vel_prov = np.where(
-        has_neighbors_rep[:, np.newaxis],
-        sep_vel,
-        ali_vel + coh_vel
-    )
+    # sum_pos = (pos[np.newaxis, :, :] * mask_3d_coh).sum(axis=1)
+    # centroid = sum_pos[has_neighbors_coh] / \
+    #     n_neighbors_coh[has_neighbors_coh, np.newaxis]
+    # coh_vel[has_neighbors_coh] = (
+    #     centroid - pos[has_neighbors_coh]) * cfg.couzin_const.coh_par
+
+    if has_neighbors_coh.any() and has_neighbors_ali.any():
+        # Couzin priorities model
+        vel_prov = np.where(
+            has_neighbors_rep[:, np.newaxis],
+            sep_vel,
+            (ali_vel + coh_vel)/2
+        )
+
+    if has_neighbors_coh.any() and not has_neighbors_ali.any():
+        vel_prov = np.where(
+            has_neighbors_rep[:, np.newaxis],
+            sep_vel,
+            coh_vel
+        )
+
+    if has_neighbors_ali.any() and not has_neighbors_coh.any():
+        vel_prov = np.where(
+            has_neighbors_rep[:, np.newaxis],
+            sep_vel,
+            ali_vel
+        )
 
     # White noise
     noise = np.random.normal(
         loc=0.0, scale=cfg.couzin_const.noi_par, size=(cfg.glob_const.n_boids, 3))
-    vel_delta = vel_prov + noise
+    # vel_delta = vel_prov + noise
+
+    target_dir = vel_prov + noise
+    dir_norm = np.linalg.norm(target_dir, axis=1, keepdims=True)
+    target_vel = (target_dir / np.maximum(dir_norm, 1e-9)) * \
+        cfg.glob_const.max_speed
+    vel_delta = target_vel - vel
 
     return vel_delta
 
@@ -252,10 +297,8 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
                 f"Method '{method}' is invalid. Choose between 'reynolds', 'vicsek' or 'couzin'.")
 
     pred_avoid_vel = np.zeros_like(flock_state.pos)
-    
+
     pred_vel_delta = np.zeros_like([[0, 0, 0]])
-    
-    
 
     if cfg.commands.predator_bool == True:
         pred_vel_delta = predator_move(
@@ -282,37 +325,32 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
     flock_state.pos += flock_state.vel
 
     predator_state.pos += predator_state.vel
-    
-    
+
 
 def make_csv(pos_history, vel_history):
-    
-        n_steps, n_boids, _ = pos_history.shape
 
-        
-        pos_flat = pos_history.reshape(-1, 3)
-        vel_flat = vel_history.reshape(-1, 3)
+    n_steps, n_boids, _ = pos_history.shape
 
+    pos_flat = pos_history.reshape(-1, 3)
+    vel_flat = vel_history.reshape(-1, 3)
 
-        time_indices = np.repeat(np.arange(n_steps), n_boids)
-        boid_ids = np.tile(np.arange(n_boids), n_steps)
+    time_indices = np.repeat(np.arange(n_steps), n_boids)
+    boid_ids = np.tile(np.arange(n_boids), n_steps)
 
+    df = pd.DataFrame({
+        'step': time_indices,
+        'boid_id': boid_ids,
+        'pos_x': pos_flat[:, 0],
+        'pos_y': pos_flat[:, 1],
+        'pos_z': pos_flat[:, 2],
+        'vel_x': vel_flat[:, 0],
+        'vel_y': vel_flat[:, 1],
+        'vel_z': vel_flat[:, 2]
+    })
 
-        df = pd.DataFrame({
-            'step': time_indices,
-            'boid_id': boid_ids,
-            'pos_x': pos_flat[:, 0],
-            'pos_y': pos_flat[:, 1],
-            'pos_z': pos_flat[:, 2],
-            'vel_x': vel_flat[:, 0],
-            'vel_y': vel_flat[:, 1],
-            'vel_z': vel_flat[:, 2]
-        })
-        
-        df['u_x'] = df['vel_x'] - df.groupby('step')['vel_x'].transform('mean')
-        df['u_y'] = df['vel_y'] - df.groupby('step')['vel_y'].transform('mean')
-        df['u_z'] = df['vel_z'] - df.groupby('step')['vel_z'].transform('mean')
+    df['u_x'] = df['vel_x'] - df.groupby('step')['vel_x'].transform('mean')
+    df['u_y'] = df['vel_y'] - df.groupby('step')['vel_y'].transform('mean')
+    df['u_z'] = df['vel_z'] - df.groupby('step')['vel_z'].transform('mean')
 
-
-        df.to_csv("flock_history.csv", index=False)
-        print("File flock_history.csv successfully created")
+    df.to_csv("flock_history.csv", index=False)
+    print("File flock_history.csv successfully created")
