@@ -10,15 +10,15 @@ class glob_const:
     n_boids: ClassVar[int] = 100
     boid_init_loc: ClassVar[np.ndarray] = np.array([3.0, 0.0, 0.0])
     boid_init_scale: ClassVar[float] = 0.5
-    spawn_length: ClassVar[int] = 40
+    spawn_length: ClassVar[int] = 200
     max_speed: ClassVar[float] = 5.0
-    min_speed: ClassVar[float] = 2.0
+    min_speed: ClassVar[float] = 5.0
     max_delta: ClassVar[float] = 1.0
-    action_range: ClassVar[float] = 40.0
-    fov_angle: ClassVar[float] = np.radians(135)
+    action_range: ClassVar[float] = 200.0
+    fov_angle: ClassVar[float] = np.radians(280)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 600
-    method: ClassVar[str] = "reynolds"
+    time_steps: ClassVar[int] = 1200
+    method: ClassVar[str] = "vicsek"
 
 
 @dataclass(frozen=True)
@@ -33,9 +33,9 @@ class commands:
 
 @dataclass(frozen=True)
 class reynolds_const:
-    coh_par: ClassVar[float] = 0.25
-    ali_par: ClassVar[float] = 0.25
-    sep_par: ClassVar[float] = 0.05
+    coh_par: ClassVar[float] = 5
+    ali_par: ClassVar[float] = 0.2
+    sep_par: ClassVar[float] = 0.001
     noi_par: ClassVar[float] = 0.30
 
 
@@ -53,7 +53,7 @@ class couzin_const:
 @dataclass(frozen=True)
 class vicsek_const:
     mex_delta: ClassVar[float] = 0.2
-    noi_par: ClassVar[float] = 1.6
+    noi_par: ClassVar[float] = 0.2
 
 
 @dataclass(frozen=True)

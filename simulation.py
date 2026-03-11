@@ -77,11 +77,12 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle):
     # Cohesion
     sum_pos = (pos[np.newaxis, :, :] * mask_3d).sum(axis=1)
     centroid = sum_pos[has_neighbors] / n_neighbors[has_neighbors, np.newaxis]
-    dist = np.where(distance == 0, 1.0, distance**3)
-    cohesion = diff / dist[:, :, np.newaxis]
-    coh_vel = (cohesion * mask_3d).sum(axis=1) * cfg.reynolds_const.coh_par
-    # coh_vel[has_neighbors] = (
-    #     centroid - pos[has_neighbors]) * cfg.reynolds_const.coh_par
+    # dist = np.where((centroid - pos[has_neighbors] )== 0, 1.0, (centroid - pos[has_neighbors])**3)
+    # cohesion = diff / dist[:, :, np.newaxis]
+    # coh_vel = (cohesion * mask_3d).sum(axis=1) * cfg.reynolds_const.coh_par
+    coh_vel[has_neighbors] = (
+        centroid - pos[has_neighbors]) * cfg.reynolds_const.coh_par / (np.linalg.norm((
+            centroid - pos[has_neighbors]), keepdims=True, axis=1)**3)
 
     # Alignement
     sum_vel = (vel[np.newaxis, :, :] * mask_3d).sum(axis=1)
@@ -94,27 +95,57 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle):
     repulsion = diff / safe_distance_sq[:, :, np.newaxis]
     sep_vel = (repulsion * mask_3d).sum(axis=1) * cfg.reynolds_const.sep_par
 
-    if sep_vel.any() >= cfg.glob_const.max_delta:
-        vel_prov = cfg.glob_const.max_delta * sep_vel / \
-            np.maximum(np.linalg.norm(sep_vel, axis=1, keepdims=True), 1e-9)
+    # Initialize the accumulator for all boids
+    vel_prov = np.zeros_like(vel)
 
-    if sep_vel.any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel).any() >= cfg.glob_const.max_delta:
-        vel_prov = cfg.glob_const.max_delta * \
-            (sep_vel+ali_vel) / np.maximum(np.linalg.norm(sep_vel +
-                                                          ali_vel, axis=1, keepdims=True), 1e-9)
+    # --- 1. Separation ---
+    vel_prov += sep_vel
+    # Calculate the magnitude (norm) of the accumulated vector per boid
+    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
+    # Clamp the vector to max_delta where it exceeds the limit
+    vel_prov = np.where(
+        norm_prov > cfg.glob_const.max_delta,
+        (vel_prov / np.maximum(norm_prov, 1e-9)) * cfg.glob_const.max_delta,
+        vel_prov
+    )
 
-    if sep_vel.any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel).any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel+coh_vel).any() >= cfg.glob_const.max_delta:
-        vel_prov = cfg.glob_const.max_delta * \
-            (sep_vel+ali_vel+coh_vel) / np.maximum(np.linalg.norm(sep_vel +
-                                                                  ali_vel+coh_vel, axis=1, keepdims=True), 1e-9)
+    # --- 2. Alignment ---
+    # Recalculate norm to check remaining capacity
+    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
+    # Create a mask for boids that still have capacity left
+    has_capacity = norm_prov < cfg.glob_const.max_delta
+    # Add alignment ONLY to boids that have capacity
+    vel_prov += np.where(has_capacity, ali_vel, 0)
 
-    if sep_vel.any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel).any() <= cfg.glob_const.max_delta and (sep_vel+ali_vel+coh_vel).any() <= cfg.glob_const.max_delta:
-        vel_prov = sep_vel+ali_vel+coh_vel
+    # Re-clamp after adding alignment
+    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
+    norm_ali = np.maximum(np.linalg.norm(ali_vel, axis=1,
+                          keepdims=True), 1e-9)
+    vel_prov = np.where(
+        norm_prov > cfg.glob_const.max_delta,
+        vel_prov-ali_vel+(ali_vel/norm_ali) *
+        (cfg.glob_const.max_delta-norm_prov),
+        vel_prov)
 
-    # White noise
-    noi_vel = np.random.normal(
-        loc=0.0, scale=cfg.reynolds_const.noi_par, size=(cfg.glob_const.n_boids, 3))
-    vel_delta = vel_prov #+ noi_vel
+    # --- 3. Cohesion ---
+    # Recalculate norm to check remaining capacity
+    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
+    # Update capacity mask
+    has_capacity = norm_prov < cfg.glob_const.max_delta
+    # Add cohesion ONLY to boids that have capacity
+    vel_prov += np.where(has_capacity, coh_vel, 0)
+
+    # Final clamp after adding cohesion
+    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
+    norm_coh = np.maximum(np.linalg.norm(coh_vel, axis=1,
+                          keepdims=True), 1e-9)
+    vel_prov = np.where(
+        norm_prov > cfg.glob_const.max_delta,
+        vel_prov-coh_vel+(coh_vel/norm_coh) *
+        (cfg.glob_const.max_delta-norm_prov),
+        vel_prov)
+
+    vel_delta = vel_prov
 
     return vel_delta
 
