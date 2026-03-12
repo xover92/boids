@@ -7,18 +7,18 @@ import matplotlib.animation as animation
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 100
+    n_boids: ClassVar[int] = 200
     boid_init_loc: ClassVar[np.ndarray] = np.array([3.0, 0.0, 0.0])
     boid_init_scale: ClassVar[float] = 0.5
-    spawn_length: ClassVar[int] = 200
+    spawn_length: ClassVar[int] = 30
     max_speed: ClassVar[float] = 5.0
-    min_speed: ClassVar[float] = 5.0
+    min_speed: ClassVar[float] = 3.0
     max_delta: ClassVar[float] = 1.0
-    action_range: ClassVar[float] = 200.0
-    fov_angle: ClassVar[float] = np.radians(280)
+    action_range: ClassVar[float] = 50.0
+    fov_angle: ClassVar[float] = np.radians(145)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 1200
-    method: ClassVar[str] = "vicsek"
+    time_steps: ClassVar[int] = 500
+    method: ClassVar[str] = "reynolds"
 
 
 @dataclass(frozen=True)
@@ -33,9 +33,9 @@ class commands:
 
 @dataclass(frozen=True)
 class reynolds_const:
-    coh_par: ClassVar[float] = 5
-    ali_par: ClassVar[float] = 0.2
-    sep_par: ClassVar[float] = 0.001
+    coh_par: ClassVar[float] = 1
+    ali_par: ClassVar[float] = 0.1
+    sep_par: ClassVar[float] = 0.05
     noi_par: ClassVar[float] = 0.30
 
 
@@ -48,12 +48,6 @@ class couzin_const:
     zoa: ClassVar[float] = 35
     zoo: ClassVar[float] = 15
     zor: ClassVar[float] = 1.0
-
-
-@dataclass(frozen=True)
-class vicsek_const:
-    mex_delta: ClassVar[float] = 0.2
-    noi_par: ClassVar[float] = 0.2
 
 
 @dataclass(frozen=True)

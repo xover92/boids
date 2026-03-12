@@ -59,7 +59,25 @@ def apply_kinematic_limits(vel, vel_delta, max_delta, min_speed, max_speed):
 
     return new_vel
 
+#function to calculate versor
+def versor(vector):
+    safe_norm=np.maximum(np.linalg.norm(vector, keepdims=True, axis=1), 1e-9)
+    return vector/safe_norm
 
+#clamping function
+
+def clamp(vel_prov, vel):
+    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
+    capacity = np.maximum(cfg.glob_const.max_delta - norm_prov, 0.0)
+    norm = np.linalg.norm(vel, axis=1, keepdims=True)
+    vel_prov += np.where(
+        norm < capacity,
+        vel,
+        versor(vel) * capacity
+    )
+    return vel_prov
+    
+ 
 # Reynolds model
 def compute_reynolds(pos, vel, diff, distance, cos_angle):
 
@@ -77,13 +95,12 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle):
     # Cohesion
     sum_pos = (pos[np.newaxis, :, :] * mask_3d).sum(axis=1)
     centroid = sum_pos[has_neighbors] / n_neighbors[has_neighbors, np.newaxis]
-    # dist = np.where((centroid - pos[has_neighbors] )== 0, 1.0, (centroid - pos[has_neighbors])**3)
-    # cohesion = diff / dist[:, :, np.newaxis]
-    # coh_vel = (cohesion * mask_3d).sum(axis=1) * cfg.reynolds_const.coh_par
     coh_vel[has_neighbors] = (
-        centroid - pos[has_neighbors]) * cfg.reynolds_const.coh_par / (np.linalg.norm((
-            centroid - pos[has_neighbors]), keepdims=True, axis=1)**3)
-
+        centroid - pos[has_neighbors]) * cfg.reynolds_const.coh_par / ((np.linalg.norm((
+            centroid - pos[has_neighbors]), keepdims=True, axis=1)**3))
+    # coh_vel[has_neighbors] = (
+    #     centroid - pos[has_neighbors]) * cfg.reynolds_const.coh_par
+    
     # Alignement
     sum_vel = (vel[np.newaxis, :, :] * mask_3d).sum(axis=1)
     mean_vel = sum_vel[has_neighbors] / n_neighbors[has_neighbors, np.newaxis]
@@ -98,82 +115,21 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle):
     # Initialize the accumulator for all boids
     vel_prov = np.zeros_like(vel)
 
-    # --- 1. Separation ---
-    vel_prov += sep_vel
-    # Calculate the magnitude (norm) of the accumulated vector per boid
-    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
-    # Clamp the vector to max_delta where it exceeds the limit
-    vel_prov = np.where(
-        norm_prov > cfg.glob_const.max_delta,
-        (vel_prov / np.maximum(norm_prov, 1e-9)) * cfg.glob_const.max_delta,
-        vel_prov
+    # Separation clamping
+    norm_sep = np.linalg.norm(sep_vel, axis=1, keepdims=True)
+    vel_prov += np.where(
+        norm_sep > cfg.glob_const.max_delta,
+        versor(sep_vel) * cfg.glob_const.max_delta,
+        sep_vel
     )
 
-    # --- 2. Alignment ---
-    # Recalculate norm to check remaining capacity
-    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
-    # Create a mask for boids that still have capacity left
-    has_capacity = norm_prov < cfg.glob_const.max_delta
-    # Add alignment ONLY to boids that have capacity
-    vel_prov += np.where(has_capacity, ali_vel, 0)
+    # Alignement clamping
+    vel_prov=clamp(vel_prov, ali_vel)
 
-    # Re-clamp after adding alignment
-    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
-    norm_ali = np.maximum(np.linalg.norm(ali_vel, axis=1,
-                          keepdims=True), 1e-9)
-    vel_prov = np.where(
-        norm_prov > cfg.glob_const.max_delta,
-        vel_prov-ali_vel+(ali_vel/norm_ali) *
-        (cfg.glob_const.max_delta-norm_prov),
-        vel_prov)
-
-    # --- 3. Cohesion ---
-    # Recalculate norm to check remaining capacity
-    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
-    # Update capacity mask
-    has_capacity = norm_prov < cfg.glob_const.max_delta
-    # Add cohesion ONLY to boids that have capacity
-    vel_prov += np.where(has_capacity, coh_vel, 0)
-
-    # Final clamp after adding cohesion
-    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
-    norm_coh = np.maximum(np.linalg.norm(coh_vel, axis=1,
-                          keepdims=True), 1e-9)
-    vel_prov = np.where(
-        norm_prov > cfg.glob_const.max_delta,
-        vel_prov-coh_vel+(coh_vel/norm_coh) *
-        (cfg.glob_const.max_delta-norm_prov),
-        vel_prov)
-
-    vel_delta = vel_prov
-
-    return vel_delta
-
-
-# Vicsek model
-def compute_vicsek(vel, distance, cos_angle):
-
-    mask = (distance < cfg.glob_const.action_range) & (
-        (cos_angle > cfg.glob_const.cos_fov) | (distance == 0))
-    n_neighbors = mask.sum(axis=1)[:, np.newaxis]
-    mask_3d = mask[:, :, np.newaxis]
-
-    # Alignement
-    sum_vel = (vel[np.newaxis, :, :] * mask_3d).sum(axis=1)
-    mean_vel = sum_vel / n_neighbors
-
-    # White noise
-    # noise = np.random.normal(
-    #     loc=0.0, scale=cfg.vicsek_const.noi_par, size=(cfg.glob_const.n_boids, 3))
-    noise = np.random.uniform(low=-cfg.vicsek_const.noi_par/2,
-                              high=cfg.vicsek_const.noi_par/2, size=(cfg.glob_const.n_boids, 3))
-
-    # Speed normalization
-    target_dir = mean_vel + noise
-    dir_norm = np.linalg.norm(target_dir, axis=1, keepdims=True)
-    target_vel = (target_dir / np.maximum(dir_norm, 1e-9)) * \
-        cfg.glob_const.max_speed
-    vel_delta = target_vel - vel
+    # Cohesion clamping
+    vel_prov=clamp(vel_prov, coh_vel)
+    
+    vel_delta=vel_prov
 
     return vel_delta
 
@@ -319,14 +275,12 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
         case "reynolds":
             vel_delta = compute_reynolds(
                 flock_state.pos, flock_state.vel, diff, distance, cos_angle)
-        case "vicsek":
-            vel_delta = compute_vicsek(flock_state.vel, distance, cos_angle)
         case "couzin":
             vel_delta = compute_couzin(
                 flock_state.pos, flock_state.vel, diff, distance, cos_angle)
         case _:
             raise ValueError(
-                f"Method '{method}' is invalid. Choose between 'reynolds', 'vicsek' or 'couzin'.")
+                f"Method '{method}' is invalid. Choose between 'reynolds' or 'couzin'.")
 
     pred_avoid_vel = np.zeros_like(flock_state.pos)
 
@@ -351,8 +305,10 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
     flock_state.vel = apply_kinematic_limits(
         flock_state.vel, final_vel_delta, cfg.glob_const.max_delta, cfg.glob_const.min_speed, cfg.glob_const.max_speed)
 
-    predator_state.vel = apply_kinematic_limits(
-        predator_state.vel, pred_vel_delta, cfg.predator_const.max_delta, cfg.predator_const.min_speed, cfg.predator_const.max_speed)
+
+    if cfg.commands.predator_bool == True:
+        predator_state.vel = apply_kinematic_limits(
+            predator_state.vel, pred_vel_delta, cfg.predator_const.max_delta, cfg.predator_const.min_speed, cfg.predator_const.max_speed)
 
     flock_state.pos += flock_state.vel
 
