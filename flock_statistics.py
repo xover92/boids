@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 def compute_spatial_correlation(df_original, step, n_bins=50):
     # Filter the dataframe for the specific time step
