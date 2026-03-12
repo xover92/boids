@@ -27,6 +27,16 @@ for t in range(cfg.glob_const.time_steps):
 print(
     f"The datasets have been created: {pos_history.shape}, {pred_pos_history.shape}")
 
+# # Calculate the norm for each boid at each timestep
+# # vel_history shape is (time_steps, n_boids, 3)
+# norms = np.linalg.norm(vel_history, axis=2)
+
+# # Check if all norms are approximately equal to the first one
+# all_equal = np.allclose(norms, norms[0, 0])
+
+# print(f"Are all velocity norms constant? {all_equal}")
+# print(f"Min norm: {norms.min():.4f}, Max norm: {norms.max():.4f}, Average norm: {norms.mean():.4f}")
+
 if cfg.commands.make_csv_bool:
     sml.make_csv(pos_history, vel_history)
 
