@@ -14,6 +14,8 @@ class FlockState:
             cfg.glob_const.n_boids, 3) * cfg.glob_const.spawn_length
         self.vel = np.random.normal(
             loc=cfg.glob_const.boid_init_loc, scale=cfg.glob_const.boid_init_scale, size=(cfg.glob_const.n_boids, 3))
+        if cfg.glob_const.method=="couzin":
+            self.vel=versor(self.vel)*cfg.glob_const.max_speed
 
 
 class Predator:
@@ -165,8 +167,7 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
     sep_vel = np.zeros_like(vel)
 
     # Repulsion
-    safe_distance = np.maximum(distance, 1e-9)
-    repulsion = diff / safe_distance[:, :, np.newaxis]
+    repulsion = versor(diff)
     sep_vel[has_neighbors_rep] = (
         repulsion * mask_3d_rep).sum(axis=1)[has_neighbors_rep] * cfg.couzin_const.sep_par
 
@@ -189,36 +190,36 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
     # coh_vel[has_neighbors_coh] = (
     #     centroid - pos[has_neighbors_coh]) * cfg.couzin_const.coh_par
 
-    if has_neighbors_coh.any() and has_neighbors_ali.any():
-        # Couzin priorities model
-        vel_prov = np.where(
-            has_neighbors_rep[:, np.newaxis],
-            sep_vel,
-            (ali_vel + coh_vel)/2
+    
+    
+   # Combine alignment and cohesion for boids that do not need to repel.
+    # If a boid has both, average them. If it has only one, use it. If neither, it defaults to 0.
+    ali_coh_combined = np.where(
+        has_neighbors_ali[:, np.newaxis] & has_neighbors_coh[:, np.newaxis],
+        (ali_vel + coh_vel) / 2.0,
+        np.where(
+            has_neighbors_ali[:, np.newaxis],
+            ali_vel,
+            coh_vel 
         )
+    )
 
-    if has_neighbors_coh.any() and not has_neighbors_ali.any():
-        vel_prov = np.where(
-            has_neighbors_rep[:, np.newaxis],
-            sep_vel,
-            coh_vel
-        )
-
-    if has_neighbors_ali.any() and not has_neighbors_coh.any():
-        vel_prov = np.where(
-            has_neighbors_rep[:, np.newaxis],
-            sep_vel,
-            ali_vel
-        )
+    # Repulsion has absolute priority. If a boid needs to repel, ignore alignment/cohesion.
+    vel_prov = np.where(
+        has_neighbors_rep[:, np.newaxis],
+        sep_vel,
+        ali_coh_combined
+    )
 
     # White noise
-    noise = np.random.normal(
-        loc=0.0, scale=cfg.couzin_const.noi_par, size=(cfg.glob_const.n_boids, 3))
+    noise=0
+    # noise = np.random.normal(
+    #     loc=0.0, scale=cfg.couzin_const.noi_par, size=(cfg.glob_const.n_boids, 3))
     # vel_delta = vel_prov + noise
 
     target_dir = vel_prov + noise
-    dir_norm = np.linalg.norm(target_dir, axis=1, keepdims=True)
-    target_vel = (target_dir / np.maximum(dir_norm, 1e-9)) * \
+    # dir_norm = np.linalg.norm(target_dir, axis=1, keepdims=True)
+    target_vel = versor(target_dir) * \
         cfg.glob_const.max_speed
     vel_delta = target_vel - vel
 
@@ -276,6 +277,10 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
     diff, distance, cos_angle = compute_distances_and_fov(
         flock_state.pos, flock_state.vel)
 
+    
+    # if not hasattr(update_flock, "counter"):
+    #     update_flock.counter = 0
+    
     match method.lower():
         case "reynolds":
             vel_delta = compute_reynolds(
@@ -297,15 +302,26 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
 
     final_vel_delta = vel_delta
 
-
-    flock_state.vel = apply_kinematic_limits(
-        flock_state.vel, final_vel_delta, cfg.glob_const.max_delta, cfg.glob_const.min_speed, cfg.glob_const.max_speed)
+    flock_state.vel+=final_vel_delta
+    # flock_state.vel = apply_kinematic_limits(
+    #     flock_state.vel, final_vel_delta, cfg.glob_const.max_delta, cfg.glob_const.min_speed, cfg.glob_const.max_speed)
 
 
     #random white noise
     noise= np.random.normal(scale=cfg.glob_const.boid_init_scale/5, loc=0, size=flock_state.vel.shape)
     norm_flock_vel=np.linalg.norm(flock_state.vel, keepdims=True, axis=1)
     flock_state.vel=versor(noise+flock_state.vel)*norm_flock_vel
+    
+    # if update_flock.counter %50 == 0:
+    #         # 1. Create a random noise vector
+    #     common_noise = np.random.normal(scale=5, size=3)
+        
+    #     # 2. Select random indices for half the flock (e.g., 100 out of 200)
+    #     num_boids = flock_state.vel.shape[0]
+    #     indices = np.random.choice(num_boids, size=num_boids // 2, replace=False)
+        
+    #     # 3. Apply the noise only to those specific boids
+    #     flock_state.vel[indices] += common_noise
     
     if cfg.commands.predator_bool == True:
         predator_state.vel = apply_kinematic_limits(
@@ -314,6 +330,8 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
     flock_state.pos += flock_state.vel
     
     predator_state.pos += predator_state.vel
+    
+    # update_flock.counter+=1
 
 
 def make_csv(pos_history, vel_history):
