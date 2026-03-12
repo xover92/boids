@@ -79,7 +79,7 @@ def clamp(vel_prov, vel):
     
  
 # Reynolds model
-def compute_reynolds(pos, vel, diff, distance, cos_angle):
+def compute_reynolds(pos, vel, diff, distance, cos_angle, predator_state):
 
     mask = (distance < cfg.glob_const.action_range) & (
         distance > 0) & (cos_angle > cfg.glob_const.cos_fov)
@@ -115,14 +115,17 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle):
     # Initialize the accumulator for all boids
     vel_prov = np.zeros_like(vel)
 
+    if cfg.commands.obstacle_bool == True:
+        vel_prov = clamp(vel_prov, compute_obstacle_avoidance(pos))
+        
+    if cfg.commands.predator_bool == True:
+        vel_prov = clamp(vel_prov, compute_predator_avoidance(
+            pos, predator_state.pos))
+        
+        
     # Separation clamping
-    norm_sep = np.linalg.norm(sep_vel, axis=1, keepdims=True)
-    vel_prov += np.where(
-        norm_sep > cfg.glob_const.max_delta,
-        versor(sep_vel) * cfg.glob_const.max_delta,
-        sep_vel
-    )
-
+    vel_prov=clamp(vel_prov, sep_vel)
+    
     # Alignement clamping
     vel_prov=clamp(vel_prov, ali_vel)
 
@@ -230,7 +233,7 @@ def compute_obstacle_avoidance(pos):
     mask = (distance < cfg.obstacles_const.action_range) & (distance > 0)
     mask_3d = mask[:, :, np.newaxis]
 
-    safe_distance_sq = np.where(distance == 0, 1.0, distance**2)
+    safe_distance_sq = np.where(distance == 0, 1.0, distance**3)
     repulsion = diff / safe_distance_sq[:, :, np.newaxis]
     obs_vel = (repulsion * mask_3d).sum(axis=1) * cfg.obstacles_const.rep_par
 
@@ -246,7 +249,7 @@ def compute_predator_avoidance(flock_pos, pred_pos):
     mask = (distance < cfg.predator_const.dist_par) & (distance > 0)
     mask_3d = mask[:, :, np.newaxis]
 
-    safe_distance_sq = np.where(distance == 0, 1.0, distance**2)
+    safe_distance_sq = np.where(distance == 0, 1.0, distance**3)
     repulsion = diff / safe_distance_sq[:, :, np.newaxis]
     pred_avoid_vel = (repulsion * mask_3d).sum(axis=1) * \
         cfg.predator_const.sep_par
@@ -274,7 +277,7 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
     match method.lower():
         case "reynolds":
             vel_delta = compute_reynolds(
-                flock_state.pos, flock_state.vel, diff, distance, cos_angle)
+                flock_state.pos, flock_state.vel, diff, distance, cos_angle, predator_state)
         case "couzin":
             vel_delta = compute_couzin(
                 flock_state.pos, flock_state.vel, diff, distance, cos_angle)
@@ -290,15 +293,8 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
         pred_vel_delta = predator_move(
             flock_state.pos, predator_state.pos, predator_state.vel)
 
-        pred_avoid_vel = compute_predator_avoidance(
-            flock_state.pos, predator_state.pos)
 
-    avoid_obs_vel = np.zeros_like(flock_state.pos)
-
-    if cfg.commands.obstacle_bool == True:
-        avoid_obs_vel = compute_obstacle_avoidance(flock_state.pos)
-
-    final_vel_delta = vel_delta + pred_avoid_vel + avoid_obs_vel
+    final_vel_delta = vel_delta
 
     # state.vel = apply_kinematic_limits(state.vel, final_vel_delta)
 
