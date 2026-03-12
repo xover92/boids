@@ -7,17 +7,17 @@ import matplotlib.animation as animation
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 200
+    n_boids: ClassVar[int] = 500
     boid_init_loc: ClassVar[np.ndarray] = np.array([3.0, 0.0, 0.0])
     boid_init_scale: ClassVar[float] = 0.5
-    spawn_length: ClassVar[int] = 30
+    spawn_length: ClassVar[int] = 70
     max_speed: ClassVar[float] = 5.0
     min_speed: ClassVar[float] = 3.0
     max_delta: ClassVar[float] = 1.0
     action_range: ClassVar[float] = 50.0
     fov_angle: ClassVar[float] = np.radians(145)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 200
+    time_steps: ClassVar[int] = 500
     method: ClassVar[str] = "reynolds"
 
 
@@ -38,7 +38,6 @@ class reynolds_const:
     sep_par: ClassVar[float] = 0.05
     noi_par: ClassVar[float] = 0.30
 
-
 @dataclass(frozen=True)
 class couzin_const:
     coh_par: ClassVar[float] = 0.1
@@ -52,14 +51,14 @@ class couzin_const:
 
 @dataclass(frozen=True)
 class predator_const:
-    max_speed: ClassVar[float] = 20.0
-    min_speed: ClassVar[float] = 8.0
-    max_delta: ClassVar[float] = 2.0
-    att_par: ClassVar[float] = 0.8
-    sep_par: ClassVar[float] = 50.0
-    dist_par: ClassVar[float] = 30.0
+    max_speed: ClassVar[float] = 30.0
+    min_speed: ClassVar[float] = 6.0
+    max_delta: ClassVar[float] = 3.0
+    att_par: ClassVar[float] = 6
+    sep_par: ClassVar[float] = 150.0
+    dist_par: ClassVar[float] = 20.0
     init_pos: ClassVar[np.ndarray] = np.array([[100.0, 20.0, 20.0]])
-    init_vel: ClassVar[np.ndarray] = np.array([[-10.0, 0.0, 0.0]])
+    init_vel: ClassVar[np.ndarray] = np.array([[-10.0, 0, 0]])
 
 
 @dataclass

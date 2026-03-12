@@ -59,12 +59,15 @@ def apply_kinematic_limits(vel, vel_delta, max_delta, min_speed, max_speed):
 
     return new_vel
 
-#function to calculate versor
+# function to calculate versor
+
+
 def versor(vector):
-    safe_norm=np.maximum(np.linalg.norm(vector, keepdims=True, axis=1), 1e-9)
+    safe_norm = np.maximum(np.linalg.norm(vector, keepdims=True, axis=1), 1e-9)
     return vector/safe_norm
 
-#clamping function
+# clamping function
+
 
 def clamp(vel_prov, vel):
     norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
@@ -76,8 +79,8 @@ def clamp(vel_prov, vel):
         versor(vel) * capacity
     )
     return vel_prov
-    
- 
+
+
 # Reynolds model
 def compute_reynolds(pos, vel, diff, distance, cos_angle, predator_state):
 
@@ -100,7 +103,7 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle, predator_state):
             centroid - pos[has_neighbors]), keepdims=True, axis=1)**3))
     # coh_vel[has_neighbors] = (
     #     centroid - pos[has_neighbors]) * cfg.reynolds_const.coh_par
-    
+
     # Alignement
     sum_vel = (vel[np.newaxis, :, :] * mask_3d).sum(axis=1)
     mean_vel = sum_vel[has_neighbors] / n_neighbors[has_neighbors, np.newaxis]
@@ -117,22 +120,21 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle, predator_state):
 
     if cfg.commands.obstacle_bool == True:
         vel_prov = clamp(vel_prov, compute_obstacle_avoidance(pos))
-        
+
     if cfg.commands.predator_bool == True:
         vel_prov = clamp(vel_prov, compute_predator_avoidance(
             pos, predator_state.pos))
-        
-        
+
     # Separation clamping
-    vel_prov=clamp(vel_prov, sep_vel)
-    
+    vel_prov = clamp(vel_prov, sep_vel)
+
     # Alignement clamping
-    vel_prov=clamp(vel_prov, ali_vel)
+    vel_prov = clamp(vel_prov, ali_vel)
 
     # Cohesion clamping
-    vel_prov=clamp(vel_prov, coh_vel)
-    
-    vel_delta=vel_prov
+    vel_prov = clamp(vel_prov, coh_vel)
+
+    vel_delta = vel_prov
 
     return vel_delta
 
@@ -293,21 +295,24 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
         pred_vel_delta = predator_move(
             flock_state.pos, predator_state.pos, predator_state.vel)
 
-
     final_vel_delta = vel_delta
 
-    # state.vel = apply_kinematic_limits(state.vel, final_vel_delta)
 
     flock_state.vel = apply_kinematic_limits(
         flock_state.vel, final_vel_delta, cfg.glob_const.max_delta, cfg.glob_const.min_speed, cfg.glob_const.max_speed)
 
 
+    #random white noise
+    noise= np.random.normal(scale=cfg.glob_const.boid_init_scale/5, loc=0, size=flock_state.vel.shape)
+    norm_flock_vel=np.linalg.norm(flock_state.vel, keepdims=True, axis=1)
+    flock_state.vel=versor(noise+flock_state.vel)*norm_flock_vel
+    
     if cfg.commands.predator_bool == True:
         predator_state.vel = apply_kinematic_limits(
             predator_state.vel, pred_vel_delta, cfg.predator_const.max_delta, cfg.predator_const.min_speed, cfg.predator_const.max_speed)
 
     flock_state.pos += flock_state.vel
-
+    
     predator_state.pos += predator_state.vel
 
 
