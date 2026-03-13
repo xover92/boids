@@ -11,6 +11,7 @@ def versor(vector):
 # Inizializing boids' initial positions and velocities
 class FlockState:
     def __init__(self):
+        # self.pos = np.random.uniform(low=0, high=30, size=(cfg.glob_const.n_boids, 3))
         self.pos = np.random.normal(
             loc=0, scale=cfg.glob_const.boids_in_pos_std, size=(cfg.glob_const.n_boids, 3))
         self.vel = np.random.normal(
@@ -319,6 +320,12 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
         (flock_state.vel / speed) * cfg.glob_const.max_speed,
         flock_state.vel
     )
+    flock_state.vel = np.where(
+        speed < cfg.glob_const.min_speed,
+        (flock_state.vel / speed) * cfg.glob_const.min_speed,
+        flock_state.vel
+    )
+
 
     noise = np.random.normal(
         scale=cfg.glob_const.boids_in_vel_std/5, loc=0, size=flock_state.vel.shape)

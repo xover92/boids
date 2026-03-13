@@ -38,7 +38,7 @@ print(
 # print(f"Min norm: {norms.min():.4f}, Max norm: {norms.max():.4f}, Average norm: {norms.mean():.4f}")
 
 if cfg.commands.make_csv_bool:
-    sml.make_csv(pos_history, vel_history)
+    sts.make_csv(pos_history, vel_history)
 
 if cfg.commands.gif_making_bool:
     anm.make_gif(pos_history, pred_pos_history)
@@ -49,7 +49,7 @@ if cfg.commands.plot_correlation_function:
     #Initialize a list to store the C(r) Series for each step
     all_correlations = []
 
-    cropped_steps = np.arange(max((df_original['step'].unique())+1)/10, max(df_original['step'].unique()))
+    cropped_steps = np.arange(max((df_original['step'].unique())+1)/4, max(df_original['step'].unique()))
     
     all_results_list = []
     
