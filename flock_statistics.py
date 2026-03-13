@@ -2,6 +2,36 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+def make_csv(pos_history, vel_history):
+
+    n_steps, n_boids, _ = pos_history.shape
+
+    pos_flat = pos_history.reshape(-1, 3)
+    vel_flat = vel_history.reshape(-1, 3)
+
+    time_indices = np.repeat(np.arange(n_steps), n_boids)
+    boid_ids = np.tile(np.arange(n_boids), n_steps)
+
+    df = pd.DataFrame({
+        'step': time_indices,
+        'boid_id': boid_ids,
+        'pos_x': pos_flat[:, 0],
+        'pos_y': pos_flat[:, 1],
+        'pos_z': pos_flat[:, 2],
+        'vel_x': vel_flat[:, 0],
+        'vel_y': vel_flat[:, 1],
+        'vel_z': vel_flat[:, 2]
+    })
+
+    df['u_x'] = df['vel_x'] - df.groupby('step')['vel_x'].transform('mean')
+    df['u_y'] = df['vel_y'] - df.groupby('step')['vel_y'].transform('mean')
+    df['u_z'] = df['vel_z'] - df.groupby('step')['vel_z'].transform('mean')
+
+    df.to_csv("flock_history.csv", index=False)
+    print("File flock_history.csv successfully created")
+
+
 def compute_spatial_correlation(df_original, step, n_bins=50):
     # Filter the dataframe for the specific time step
     df = df_original[df_original['step'] == step]
