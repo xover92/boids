@@ -1,24 +1,32 @@
 import numpy as np
 from dataclasses import dataclass
 from typing import ClassVar
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 
 
 @dataclass(frozen=True)
 class glob_const:
     n_boids: ClassVar[int] = 200
-    boid_init_loc: ClassVar[np.ndarray] = np.array([1.0, 0.0, 0.0])
-    boid_init_scale: ClassVar[float] = 0.01
-    spawn_length: ClassVar[int] = 30
-    max_speed: ClassVar[float] = 1.0
-    min_speed: ClassVar[float] = 1.0
-    max_delta: ClassVar[float] = 1.0
+    boids_in_vel_std: ClassVar[float] = 0.5
+    boids_in_pos_std: ClassVar[float] = 10.0
+    max_speed: ClassVar[float] = 5.0
+    min_speed: ClassVar[float] = 3.0
+    max_delta: ClassVar[float] = 0.2
     action_range: ClassVar[float] = 50.0
+    max_turn_angle: ClassVar[float] = np.radians(5.0) 
     fov_angle: ClassVar[float] = np.radians(145)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 600
+    time_steps: ClassVar[int] = 200
     method: ClassVar[str] = "couzin"
+
+
+@dataclass(frozen=True)
+class predator_const:
+    max_speed: ClassVar[float] = 30.0
+    min_speed: ClassVar[float] = 6.0
+    max_delta: ClassVar[float] = 3.0
+    att_par: ClassVar[float] = 6
+    sep_par: ClassVar[float] = 150.0
+    dist_par: ClassVar[float] = 20.0
 
 
 @dataclass(frozen=True)
@@ -40,25 +48,13 @@ class reynolds_const:
 
 @dataclass(frozen=True)
 class couzin_const:
-    coh_par: ClassVar[float] = 1
-    ali_par: ClassVar[float] = 1
-    sep_par: ClassVar[float] = 1
-    noi_par: ClassVar[float] = 0.1
-    zoa: ClassVar[float] = 35
-    zoo: ClassVar[float] = 25
-    zor: ClassVar[float] = 10
-
-
-@dataclass(frozen=True)
-class predator_const:
-    max_speed: ClassVar[float] = 30.0
-    min_speed: ClassVar[float] = 6.0
-    max_delta: ClassVar[float] = 3.0
-    att_par: ClassVar[float] = 6
-    sep_par: ClassVar[float] = 150.0
-    dist_par: ClassVar[float] = 20.0
-    init_pos: ClassVar[np.ndarray] = np.array([[100.0, 20.0, 20.0]])
-    init_vel: ClassVar[np.ndarray] = np.array([[-10.0, 0, 0]])
+    coh_par: ClassVar[float] = 1.0
+    ali_par: ClassVar[float] = 1.0
+    sep_par: ClassVar[float] = 1.0
+    noi_par: ClassVar[float] = 1.0
+    zoa: ClassVar[float] = 25
+    zoo: ClassVar[float] = 15
+    zor: ClassVar[float] = 3.0
 
 
 @dataclass
