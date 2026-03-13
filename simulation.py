@@ -1,41 +1,38 @@
 import config as cfg
 import numpy as np
-from dataclasses import dataclass
-from typing import ClassVar
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import pandas as pd
+
+
 # Inizializing boids' initial positions and velocities
-
-
 class FlockState:
     def __init__(self):
-        self.pos = np.random.rand(
-            cfg.glob_const.n_boids, 3) * cfg.glob_const.spawn_length
+        self.pos = np.random.normal(
+            loc=0, scale=cfg.glob_const.boids_in_pos_std, size=(cfg.glob_const.n_boids, 3))
         self.vel = np.random.normal(
-            loc=cfg.glob_const.boid_init_loc, scale=cfg.glob_const.boid_init_scale, size=(cfg.glob_const.n_boids, 3))
-        if cfg.glob_const.method=="couzin":
-            self.vel=versor(self.vel)*cfg.glob_const.max_speed
+            loc=cfg.glob_const.min_speed, scale=cfg.glob_const.boids_in_vel_std, size=(cfg.glob_const.n_boids, 3))
+        if cfg.glob_const.method == "couzin":
+            self.vel = versor(self.vel)*cfg.glob_const.min_speed
 
 
+# Inizializing predator's initial position e velocity
 class Predator:
     def __init__(self):
-        self.pos = cfg.predator_const.init_pos
-        self.vel = cfg.predator_const.init_vel
+        self.pos = np.random.uniform(low=30, high=50,  size=(1, 3))
+        self.vel = np.random.uniform(
+            low=cfg.predator_const.min_speed, high=cfg.predator_const.max_speed, size=(1, 3))
 
 
-# Compute vector distances matrix (n, n, 3), distances' norms matrix (n, n)
-# and fov matrix (n, n)
+# Compute distance vectors matrix (n, n, 3), distance norms matrix (n, n)
+# and fov matrix (n, n) between boids
 def compute_distances_and_fov(pos, vel):
+    dist_vects = pos[:, np.newaxis, :] - pos[np.newaxis, :, :]
+    dist_norms = np.linalg.norm(dist_vects, axis=-1)
 
-    diff = pos[:, np.newaxis, :] - pos[np.newaxis, :, :]
-    distance = np.linalg.norm(diff, axis=-1)
+    dot_prods = (vel[:, np.newaxis, :] * (-dist_vects)).sum(axis=-1)
+    vel_norms = np.linalg.norm(vel, axis=-1)[:, np.newaxis]
+    cos_angles = dot_prods / np.maximum(vel_norms * dist_norms, 1e-9)
 
-    dot_product = (vel[:, np.newaxis, :] * (-diff)).sum(axis=-1)
-    vel_norm = np.linalg.norm(vel, axis=-1)[:, np.newaxis]
-    cos_angle = dot_product / np.maximum(vel_norm * distance, 1e-18)
-
-    return diff, distance, cos_angle
+    return dist_vects, dist_norms, cos_angles
 
 
 # Checking max/min speed and speed variations
@@ -61,16 +58,14 @@ def apply_kinematic_limits(vel, vel_delta, max_delta, min_speed, max_speed):
 
     return new_vel
 
-# function to calculate versor
 
-
+# General function to compute versors
 def versor(vector):
     safe_norm = np.maximum(np.linalg.norm(vector, keepdims=True, axis=1), 1e-9)
     return vector/safe_norm
 
-# clamping function
 
-
+# Clamping function
 def clamp(vel_prov, vel):
     norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
     capacity = np.maximum(cfg.glob_const.max_delta - norm_prov, 0.0)
@@ -84,42 +79,38 @@ def clamp(vel_prov, vel):
 
 
 # Reynolds model
-def compute_reynolds(pos, vel, diff, distance, cos_angle, predator_state):
+def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_state):
 
-    mask = (distance < cfg.glob_const.action_range) & (
-        distance > 0) & (cos_angle > cfg.glob_const.cos_fov)
+    mask = (dist_norms < cfg.glob_const.action_range) & (
+        dist_norms > 0) & (cos_angles > cfg.glob_const.cos_fov)
     mask_3d = mask[:, :, np.newaxis]
     n_neighbors = mask.sum(axis=1)
     has_neighbors = n_neighbors > 0
 
-    # Inizializing forces vectors to zero
+    # Inizializing velocities vectors to zero
     coh_vel = np.zeros_like(vel)
     ali_vel = np.zeros_like(vel)
     sep_vel = np.zeros_like(vel)
+    vel_prov = np.zeros_like(vel)
 
     # Cohesion
     sum_pos = (pos[np.newaxis, :, :] * mask_3d).sum(axis=1)
     centroid = sum_pos[has_neighbors] / n_neighbors[has_neighbors, np.newaxis]
-    coh_vel[has_neighbors] = (
-        centroid - pos[has_neighbors]) * cfg.reynolds_const.coh_par / ((np.linalg.norm((
-            centroid - pos[has_neighbors]), keepdims=True, axis=1)**3))
-    # coh_vel[has_neighbors] = (
-    #     centroid - pos[has_neighbors]) * cfg.reynolds_const.coh_par
+    neighb_dist = centroid - pos[has_neighbors]
+    neighb_dist_norm = np.linalg.norm((neighb_dist), keepdims=True, axis=1)
+    coh_vel[has_neighbors] = (neighb_dist) * cfg.reynolds_const.coh_par / (neighb_dist_norm**3)
 
     # Alignement
     sum_vel = (vel[np.newaxis, :, :] * mask_3d).sum(axis=1)
     mean_vel = sum_vel[has_neighbors] / n_neighbors[has_neighbors, np.newaxis]
-    ali_vel[has_neighbors] = (
-        mean_vel - vel[has_neighbors]) * cfg.reynolds_const.ali_par
+    ali_vel[has_neighbors] = (mean_vel - vel[has_neighbors]) * cfg.reynolds_const.ali_par
 
     # Separation
-    safe_distance_sq = np.where(distance == 0, 1.0, distance**3)
-    repulsion = diff / safe_distance_sq[:, :, np.newaxis]
+    safe_distance_sq = np.where(dist_norms == 0, 1.0, dist_norms**3)
+    repulsion = dist_vects / safe_distance_sq[:, :, np.newaxis]
     sep_vel = (repulsion * mask_3d).sum(axis=1) * cfg.reynolds_const.sep_par
 
-    # Initialize the accumulator for all boids
-    vel_prov = np.zeros_like(vel)
-
+    # Computing clamping for each interaction 
     if cfg.commands.obstacle_bool == True:
         vel_prov = clamp(vel_prov, compute_obstacle_avoidance(pos))
 
@@ -127,13 +118,10 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle, predator_state):
         vel_prov = clamp(vel_prov, compute_predator_avoidance(
             pos, predator_state.pos))
 
-    # Separation clamping
     vel_prov = clamp(vel_prov, sep_vel)
 
-    # Alignement clamping
     vel_prov = clamp(vel_prov, ali_vel)
 
-    # Cohesion clamping
     vel_prov = clamp(vel_prov, coh_vel)
 
     vel_delta = vel_prov
@@ -142,14 +130,14 @@ def compute_reynolds(pos, vel, diff, distance, cos_angle, predator_state):
 
 
 # Couzin model
-def compute_couzin(pos, vel, diff, distance, cos_angle):
+def compute_couzin(pos, vel, dist_vects, dist_norms, cos_angles):
 
-    fov_mask = cos_angle > cfg.glob_const.cos_fov
-    mask_rep = (distance < cfg.couzin_const.zor) & (distance > 0) & fov_mask
-    mask_ali = (distance >= cfg.couzin_const.zor) & (
-        distance < cfg.couzin_const.zoo) & fov_mask
-    mask_coh = (distance >= cfg.couzin_const.zoo) & (
-        distance <= cfg.couzin_const.zoa) & fov_mask
+    fov_mask = cos_angles > cfg.glob_const.cos_fov
+    mask_rep = (dist_norms < cfg.couzin_const.zor) & (dist_norms > 0) & fov_mask
+    mask_ali = (dist_norms >= cfg.couzin_const.zor) & (
+        dist_norms < cfg.couzin_const.zoo) & fov_mask
+    mask_coh = (dist_norms >= cfg.couzin_const.zoo) & (
+        dist_norms <= cfg.couzin_const.zoa) & fov_mask
     mask_3d_rep = mask_rep[:, :, np.newaxis]
     mask_3d_ali = mask_ali[:, :, np.newaxis]
     mask_3d_coh = mask_coh[:, :, np.newaxis]
@@ -167,11 +155,16 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
     sep_vel = np.zeros_like(vel)
 
     # Repulsion
-    repulsion = versor(diff)
+    repulsion = versor(dist_vects)
     sep_vel[has_neighbors_rep] = (
         repulsion * mask_3d_rep).sum(axis=1)[has_neighbors_rep] * cfg.couzin_const.sep_par
 
     # Alignment
+    align = versor(vel)
+    ali_vel[has_neighbors_ali] =(
+        align * mask_3d_ali).sum(axis=1)[has_neighbors_ali] * cfg.couzin_const.ali_par
+
+
     sum_vel = (vel[np.newaxis, :, :] * mask_3d_ali).sum(axis=1)
     mean_vel = sum_vel[has_neighbors_ali] / \
         n_neighbors_ali[has_neighbors_ali, np.newaxis]
@@ -179,8 +172,8 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
         mean_vel - vel[has_neighbors_ali]) * cfg.couzin_const.ali_par
 
     # Cohesion
-    safe_distance = np.maximum(distance, 1e-9)
-    cohesion = diff / safe_distance[:, :, np.newaxis]
+    safe_distance = np.maximum(dist_norms, 1e-9)
+    cohesion = dist_vects / safe_distance[:, :, np.newaxis]
     coh_vel[has_neighbors_coh] = -(
         cohesion * mask_3d_coh).sum(axis=1)[has_neighbors_coh] * cfg.couzin_const.coh_par
 
@@ -190,8 +183,6 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
     # coh_vel[has_neighbors_coh] = (
     #     centroid - pos[has_neighbors_coh]) * cfg.couzin_const.coh_par
 
-    
-    
    # Combine alignment and cohesion for boids that do not need to repel.
     # If a boid has both, average them. If it has only one, use it. If neither, it defaults to 0.
     ali_coh_combined = np.where(
@@ -200,7 +191,7 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
         np.where(
             has_neighbors_ali[:, np.newaxis],
             ali_vel,
-            coh_vel 
+            coh_vel
         )
     )
 
@@ -212,7 +203,7 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
     )
 
     # White noise
-    noise=0
+    noise = 0
     # noise = np.random.normal(
     #     loc=0.0, scale=cfg.couzin_const.noi_par, size=(cfg.glob_const.n_boids, 3))
     # vel_delta = vel_prov + noise
@@ -277,10 +268,9 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
     diff, distance, cos_angle = compute_distances_and_fov(
         flock_state.pos, flock_state.vel)
 
-    
     # if not hasattr(update_flock, "counter"):
     #     update_flock.counter = 0
-    
+
     match method.lower():
         case "reynolds":
             vel_delta = compute_reynolds(
@@ -302,35 +292,35 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
 
     final_vel_delta = vel_delta
 
-    flock_state.vel+=final_vel_delta
+    flock_state.vel += final_vel_delta
     # flock_state.vel = apply_kinematic_limits(
     #     flock_state.vel, final_vel_delta, cfg.glob_const.max_delta, cfg.glob_const.min_speed, cfg.glob_const.max_speed)
 
+    # random white noise
+    noise = np.random.normal(
+        scale=cfg.glob_const.boids_in_vel_std/5, loc=0, size=flock_state.vel.shape)
+    norm_flock_vel = np.linalg.norm(flock_state.vel, keepdims=True, axis=1)
+    flock_state.vel = versor(noise+flock_state.vel)*norm_flock_vel
 
-    #random white noise
-    noise= np.random.normal(scale=cfg.glob_const.boid_init_scale/5, loc=0, size=flock_state.vel.shape)
-    norm_flock_vel=np.linalg.norm(flock_state.vel, keepdims=True, axis=1)
-    flock_state.vel=versor(noise+flock_state.vel)*norm_flock_vel
-    
     # if update_flock.counter %50 == 0:
     #         # 1. Create a random noise vector
     #     common_noise = np.random.normal(scale=5, size=3)
-        
+
     #     # 2. Select random indices for half the flock (e.g., 100 out of 200)
     #     num_boids = flock_state.vel.shape[0]
     #     indices = np.random.choice(num_boids, size=num_boids // 2, replace=False)
-        
+
     #     # 3. Apply the noise only to those specific boids
     #     flock_state.vel[indices] += common_noise
-    
+
     if cfg.commands.predator_bool == True:
         predator_state.vel = apply_kinematic_limits(
             predator_state.vel, pred_vel_delta, cfg.predator_const.max_delta, cfg.predator_const.min_speed, cfg.predator_const.max_speed)
 
     flock_state.pos += flock_state.vel
-    
+
     predator_state.pos += predator_state.vel
-    
+
     # update_flock.counter+=1
 
 
