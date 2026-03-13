@@ -7,17 +7,17 @@ import matplotlib.animation as animation
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 100
-    boid_init_loc: ClassVar[np.ndarray] = np.array([5.0, 0.0, 0.0])
-    boid_init_scale: ClassVar[float] = 0.5
+    n_boids: ClassVar[int] = 200
+    boid_init_loc: ClassVar[np.ndarray] = np.array([1.0, 0.0, 0.0])
+    boid_init_scale: ClassVar[float] = 0.01
     spawn_length: ClassVar[int] = 30
-    max_speed: ClassVar[float] = 5.0
-    min_speed: ClassVar[float] = 3.0
+    max_speed: ClassVar[float] = 1.0
+    min_speed: ClassVar[float] = 1.0
     max_delta: ClassVar[float] = 1.0
     action_range: ClassVar[float] = 50.0
-    fov_angle: ClassVar[float] = np.radians(180)
+    fov_angle: ClassVar[float] = np.radians(145)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 300
+    time_steps: ClassVar[int] = 600
     method: ClassVar[str] = "couzin"
 
 
@@ -40,13 +40,13 @@ class reynolds_const:
 
 @dataclass(frozen=True)
 class couzin_const:
-    coh_par: ClassVar[float] = 0.1
-    ali_par: ClassVar[float] = 0.2
-    sep_par: ClassVar[float] = 0.5
+    coh_par: ClassVar[float] = 1
+    ali_par: ClassVar[float] = 1
+    sep_par: ClassVar[float] = 1
     noi_par: ClassVar[float] = 0.1
     zoa: ClassVar[float] = 35
     zoo: ClassVar[float] = 25
-    zor: ClassVar[float] = 10.0
+    zor: ClassVar[float] = 10
 
 
 @dataclass(frozen=True)

@@ -14,8 +14,8 @@ class FlockState:
             cfg.glob_const.n_boids, 3) * cfg.glob_const.spawn_length
         self.vel = np.random.normal(
             loc=cfg.glob_const.boid_init_loc, scale=cfg.glob_const.boid_init_scale, size=(cfg.glob_const.n_boids, 3))
-        if cfg.glob_const.method=="couzin":
-            self.vel=versor(self.vel)*cfg.glob_const.max_speed
+        if cfg.glob_const.method == "couzin":
+            self.vel = versor(self.vel)*cfg.glob_const.max_speed
 
 
 class Predator:
@@ -161,22 +161,24 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
     has_neighbors_rep = n_neighbors_rep > 0
     has_neighbors_ali = n_neighbors_ali > 0
     has_neighbors_coh = n_neighbors_coh > 0
+    has_no_neighbours = (~has_neighbors_rep) & (~has_neighbors_ali) & (~has_neighbors_coh)
 
     coh_vel = np.zeros_like(vel)
     ali_vel = np.zeros_like(vel)
     sep_vel = np.zeros_like(vel)
 
     # Repulsion
-    repulsion = versor(diff)
+    safe_distance = np.maximum(distance, 1e-9)
+    repulsion = diff / safe_distance[:, :, np.newaxis]
     sep_vel[has_neighbors_rep] = (
         repulsion * mask_3d_rep).sum(axis=1)[has_neighbors_rep] * cfg.couzin_const.sep_par
 
     # Alignment
     sum_vel = (vel[np.newaxis, :, :] * mask_3d_ali).sum(axis=1)
-    mean_vel = sum_vel[has_neighbors_ali] / \
-        n_neighbors_ali[has_neighbors_ali, np.newaxis]
+    # mean_vel = sum_vel[has_neighbors_ali] / \
+    #     n_neighbors_ali[has_neighbors_ali, np.newaxis]
     ali_vel[has_neighbors_ali] = (
-        mean_vel - vel[has_neighbors_ali]) * cfg.couzin_const.ali_par
+        sum_vel[has_neighbors_ali]/np.linalg.norm(sum_vel[has_neighbors_ali], axis=1, keepdims=True)) * cfg.couzin_const.ali_par
 
     # Cohesion
     safe_distance = np.maximum(distance, 1e-9)
@@ -184,14 +186,6 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
     coh_vel[has_neighbors_coh] = -(
         cohesion * mask_3d_coh).sum(axis=1)[has_neighbors_coh] * cfg.couzin_const.coh_par
 
-    # sum_pos = (pos[np.newaxis, :, :] * mask_3d_coh).sum(axis=1)
-    # centroid = sum_pos[has_neighbors_coh] / \
-    #     n_neighbors_coh[has_neighbors_coh, np.newaxis]
-    # coh_vel[has_neighbors_coh] = (
-    #     centroid - pos[has_neighbors_coh]) * cfg.couzin_const.coh_par
-
-    
-    
    # Combine alignment and cohesion for boids that do not need to repel.
     # If a boid has both, average them. If it has only one, use it. If neither, it defaults to 0.
     ali_coh_combined = np.where(
@@ -200,7 +194,7 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
         np.where(
             has_neighbors_ali[:, np.newaxis],
             ali_vel,
-            coh_vel 
+            coh_vel
         )
     )
 
@@ -210,17 +204,54 @@ def compute_couzin(pos, vel, diff, distance, cos_angle):
         sep_vel,
         ali_coh_combined
     )
+    
+    vel_prov = np.where(has_no_neighbours[:, np.newaxis], vel, vel_prov)
 
     # White noise
-    noise=0
+    noise = 0
     # noise = np.random.normal(
     #     loc=0.0, scale=cfg.couzin_const.noi_par, size=(cfg.glob_const.n_boids, 3))
     # vel_delta = vel_prov + noise
 
     target_dir = vel_prov + noise
+    # Calculate the angular difference between target direction and current velocity
+    # Using the dot product formula: cos(theta) = (A · B) / (|A| * |B|)
+    
+    max_angle = 1
+# 1. Calculate the angle between current velocity and the desired direction
+    # English: Compute dot product and magnitudes for angular difference
+    dot_target_vel = (vel_prov * vel).sum(axis=-1)
+    norms_prod = np.linalg.norm(vel_prov, axis=-1) * np.linalg.norm(vel, axis=-1)
+    
+    # English: Safe cosine calculation to avoid NaNs
+    cos_diff = np.divide(dot_target_vel, norms_prod, out=np.zeros_like(dot_target_vel), where=norms_prod!=0)
+    cos_diff = np.clip(cos_diff, -1.0, 1.0)
+    angle_diff_deg = np.degrees(np.arccos(cos_diff))
+
+    # 2. Limit the steering angle to 45 degrees
+    # English: Define max turn and create the rotation plane
+    max_turn = np.radians(max_angle)
+    v_u = versor(vel)
+    t_u = versor(vel_prov)
+
+    # English: Calculate perpendicular component for the turn
+    perp = t_u - (t_u * v_u).sum(axis=-1, keepdims=True) * v_u
+    perp = versor(perp)
+
+    # English: Construct the limited direction vector
+    limited_vec = v_u * np.cos(max_turn) + perp * np.sin(max_turn)
+
+    # 3. Apply the limit only where the angle exceeds 45 degrees
+    # English: Magnitude of the target velocity
+    target_mag = np.linalg.norm(vel_prov, axis=-1, keepdims=True)
+    
+    # English: Final target direction with angular constraint
+    target_dir = np.where(angle_diff_deg[:, np.newaxis] > max_angle, limited_vec * target_mag, vel_prov)
     # dir_norm = np.linalg.norm(target_dir, axis=1, keepdims=True)
     target_vel = versor(target_dir) * \
         cfg.glob_const.max_speed
+    # vel_delta = np.where(np.linalg.norm(target_vel-vel, keepdims=True, axis=1) >
+    #                      cfg.glob_const.max_delta, versor(target_vel - vel)*cfg.glob_const.max_delta, target_vel - vel)
     vel_delta = target_vel - vel
 
     return vel_delta
@@ -277,10 +308,9 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
     diff, distance, cos_angle = compute_distances_and_fov(
         flock_state.pos, flock_state.vel)
 
-    
     # if not hasattr(update_flock, "counter"):
     #     update_flock.counter = 0
-    
+
     match method.lower():
         case "reynolds":
             vel_delta = compute_reynolds(
@@ -302,35 +332,35 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
 
     final_vel_delta = vel_delta
 
-    flock_state.vel+=final_vel_delta
+    flock_state.vel += final_vel_delta
     # flock_state.vel = apply_kinematic_limits(
     #     flock_state.vel, final_vel_delta, cfg.glob_const.max_delta, cfg.glob_const.min_speed, cfg.glob_const.max_speed)
 
+    # random white noise
+    noise = 0 #np.random.normal(
+        #scale=cfg.glob_const.boid_init_scale/100, loc=0, size=flock_state.vel.shape)
+    norm_flock_vel = np.linalg.norm(flock_state.vel, keepdims=True, axis=1)
+    flock_state.vel = versor(noise+flock_state.vel)*norm_flock_vel
 
-    #random white noise
-    noise= np.random.normal(scale=cfg.glob_const.boid_init_scale/5, loc=0, size=flock_state.vel.shape)
-    norm_flock_vel=np.linalg.norm(flock_state.vel, keepdims=True, axis=1)
-    flock_state.vel=versor(noise+flock_state.vel)*norm_flock_vel
-    
     # if update_flock.counter %50 == 0:
     #         # 1. Create a random noise vector
     #     common_noise = np.random.normal(scale=5, size=3)
-        
+
     #     # 2. Select random indices for half the flock (e.g., 100 out of 200)
     #     num_boids = flock_state.vel.shape[0]
     #     indices = np.random.choice(num_boids, size=num_boids // 2, replace=False)
-        
+
     #     # 3. Apply the noise only to those specific boids
     #     flock_state.vel[indices] += common_noise
-    
+
     if cfg.commands.predator_bool == True:
         predator_state.vel = apply_kinematic_limits(
             predator_state.vel, pred_vel_delta, cfg.predator_const.max_delta, cfg.predator_const.min_speed, cfg.predator_const.max_speed)
 
     flock_state.pos += flock_state.vel
-    
+
     predator_state.pos += predator_state.vel
-    
+
     # update_flock.counter+=1
 
 
