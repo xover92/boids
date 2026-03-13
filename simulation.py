@@ -185,6 +185,7 @@ def compute_couzin(pos, vel, dist_vects, dist_norms, cos_angles, predator_state)
     has_neighbors_rep = n_neighbors_rep > 0
     has_neighbors_ali = n_neighbors_ali > 0
     has_neighbors_coh = n_neighbors_coh > 0
+    has_no_neighbours = (~has_neighbors_rep) & (~has_neighbors_ali) & (~has_neighbors_coh)
 
     coh_vel = np.zeros_like(vel)
     ali_vel = np.zeros_like(vel)
