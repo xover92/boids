@@ -22,26 +22,16 @@ for t in range(cfg.glob_const.time_steps):
     pred_pos_history[t] = predator.pos.copy()
     pred_vel_history[t] = predator.vel.copy()
 
-    sml.update_flock(flock, predator, cfg.glob_const.method)
+    sml.update_flock(flock, predator, cfg.commands.method)
 
 print(
     f"The datasets have been created: {pos_history.shape}, {pred_pos_history.shape}")
 
-# # Calculate the norm for each boid at each timestep
-# # vel_history shape is (time_steps, n_boids, 3)
-# norms = np.linalg.norm(vel_history, axis=2)
-
-# # Check if all norms are approximately equal to the first one
-# all_equal = np.allclose(norms, norms[0, 0])
-
-# print(f"Are all velocity norms constant? {all_equal}")
-# print(f"Min norm: {norms.min():.4f}, Max norm: {norms.max():.4f}, Average norm: {norms.mean():.4f}")
+if cfg.commands.gif_making_bool:
+    anm.make_gif(pos_history, pred_pos_history)
 
 if cfg.commands.make_csv_bool:
     sml.make_csv(pos_history, vel_history)
-
-if cfg.commands.gif_making_bool:
-    anm.make_gif(pos_history, pred_pos_history)
     
 if cfg.commands.plot_correlation_function:
     df_original = pd.read_csv("flock_history.csv")
