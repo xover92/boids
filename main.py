@@ -31,7 +31,7 @@ if cfg.commands.gif_making_bool:
     anm.make_gif(pos_history, pred_pos_history)
 
 if cfg.commands.make_csv_bool:
-    sml.make_csv(pos_history, vel_history)
+    sts.make_csv(pos_history, vel_history)
     
 if cfg.commands.plot_correlation_function:
     df_original = pd.read_csv("flock_history.csv")

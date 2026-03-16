@@ -12,12 +12,14 @@ def versor(vector):
 # Inizializing boids' initial positions and velocities
 class FlockState:
     def __init__(self):
-        self.pos = np.random.normal(
-            loc=0, scale=cfg.glob_const.boids_in_pos_std, size=(cfg.glob_const.n_boids, 3))
+        # self.pos = np.random.normal(
+        #     loc=0, scale=cfg.glob_const.boids_in_pos_std, size=(cfg.glob_const.n_boids, 3))
+        self.pos = np.random.uniform(
+            low=-10, high=10, size=(cfg.glob_const.n_boids, 3))
         self.vel = np.random.normal(
             loc=cfg.reynolds_const.min_speed, scale=cfg.glob_const.boids_in_vel_std, size=(cfg.glob_const.n_boids, 3))
         self.vel = versor(self.vel)*cfg.reynolds_const.min_speed
-        if cfg.commands.method=="couzin":
+        if cfg.commands.method == "couzin":
             self.vel = versor(self.vel)*cfg.couzin_const.speed
 
 
@@ -250,9 +252,10 @@ def predator_move(flock_pos, pred_pos):
     centroid = sum_pos / cfg.glob_const.n_boids
     prov_vel = (centroid - pred_pos) * cfg.predator_const.att_par
     prov_vel = np.where(
-        np.linalg.norm(prov_vel, keepdims=True, axis=1) > cfg.predator_const.max_delta,
-             versor(prov_vel) * cfg.predator_const.max_delta,
-             prov_vel)
+        np.linalg.norm(prov_vel, keepdims=True,
+                       axis=1) > cfg.predator_const.max_delta,
+        versor(prov_vel) * cfg.predator_const.max_delta,
+        prov_vel)
 
     return prov_vel
 
@@ -283,12 +286,17 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
         (flock_state.vel / boids_speed) * cfg.reynolds_const.max_speed,
         flock_state.vel
     )
+    flock_state.vel = np.where(
+        boids_speed < cfg.reynolds_const.min_speed,
+        (flock_state.vel / boids_speed) * cfg.reynolds_const.min_speed,
+        flock_state.vel
+    )
 
     # Random white noise
-    noise = np.random.normal(
-        scale=cfg.glob_const.boids_in_vel_std/5, loc=0, size=flock_state.vel.shape)
-    norm_flock_vel = np.linalg.norm(flock_state.vel, keepdims=True, axis=1)
-    flock_state.vel = versor(noise+flock_state.vel)*norm_flock_vel
+    # noise = np.random.normal(
+    #     scale=cfg.glob_const.boids_in_vel_std/5, loc=0, size=flock_state.vel.shape)
+    # norm_flock_vel = np.linalg.norm(flock_state.vel, keepdims=True, axis=1)
+    # flock_state.vel = versor(noise+flock_state.vel)*norm_flock_vel
 
     if cfg.commands.predator_bool == True:
         pred_prov_vel = predator_move(
