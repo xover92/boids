@@ -1,8 +1,6 @@
 import config as cfg
 import simulation as sml
 import numpy as np
-from dataclasses import dataclass
-from typing import ClassVar
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.colors as mcolors
@@ -22,7 +20,7 @@ def make_gif(pos_history, pred_pos_history):
     if cfg.commands.artistic_rendition_bool == True:
         fig = plt.figure(figsize=(12, 9))
 
-        # MAKING THE GRADIENT
+        # Sky gradient
         ax_bg = fig.add_axes([0, 0, 1, 1])
         gradient = np.linspace(0, 1, 256).reshape(-1, 1)
 
@@ -33,7 +31,7 @@ def make_gif(pos_history, pred_pos_history):
         ax_bg.imshow(gradient, aspect='auto', cmap=sunset_cmap, origin='upper')
         ax_bg.set_axis_off()  # Nascondiamo l'asse del gradiente
 
-        # transparent grid
+        # Transparent grid
         ax = fig.add_subplot(111, projection='3d')
         ax.set_facecolor('none')
         ax.patch.set_alpha(0.0)
@@ -41,7 +39,7 @@ def make_gif(pos_history, pred_pos_history):
 
         ax.set_axis_off()
 
-        # CLOUDS
+        # Drawing clouds
         def draw_clouds(n_clusters=50):
             for _ in range(n_clusters):
                 cx, cy, cz = (np.random.rand(3) - 0.5) * 100
@@ -65,23 +63,22 @@ def make_gif(pos_history, pred_pos_history):
                                pos_history[0, :, 2],
                                c='black', marker='^', s=20, alpha=0.7,)
 
-
-    pred_scatter= None
     # Drawing the predator
+    pred_scatter= None
     if cfg.commands.predator_bool == True:
         pred_scatter = ax.scatter(pred_pos_history[0, :, 0],
                                   pred_pos_history[0, :, 1],
                                   pred_pos_history[0, :, 2],
                                   c='red', marker='^', s=60, alpha=1.0,)
 
-        # Drawing obstacles
+    # Drawing obstacles
     if cfg.commands.obstacle_bool == True:
         ax.scatter(cfg.obstacles_const.positions[:, 0],
                    cfg.obstacles_const.positions[:, 1],
                    cfg.obstacles_const.positions[:, 2],
                    c='red', marker='o', s=200, label="Obstacles")
 
-    # # Moving the boids
+    # Moving the boids
     if cfg.commands.moving_camera_bool == False:
         def animate(frame):
 
@@ -97,7 +94,7 @@ def make_gif(pos_history, pred_pos_history):
 
             return flock_scatter, pred_scatter
 
-        # Moving the boids with dynamic camera
+    # Dynamic camera
     if cfg.commands.moving_camera_bool == True:
         def animate(frame):
 
@@ -121,7 +118,7 @@ def make_gif(pos_history, pred_pos_history):
 
             return flock_scatter, pred_scatter
 
-        # Creating the gif
+    # Creating the gif
     ani = animation.FuncAnimation(
         fig, animate, frames=cfg.glob_const.time_steps, interval=100, blit=False)
 
