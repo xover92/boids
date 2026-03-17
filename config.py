@@ -28,7 +28,7 @@ class glob_const:
 
 @dataclass(frozen=True)
 class reynolds_const:
-    coh_par: ClassVar[float] = 10
+    coh_par: ClassVar[float] = 15
     ali_par: ClassVar[float] = 0.20
     sep_par: ClassVar[float] = 0.20
     noi_par: ClassVar[float] = 0.3
@@ -91,15 +91,15 @@ class couzin_const:
 
 @dataclass
 class obstacles_const:
-    n_cols: ClassVar[int] = 1       
-    n_per_col: ClassVar[int] = 20   
-    y_vals = np.linspace(-0.0, 0.0, n_cols)
-    z_vals = np.linspace(-40.0, 40.0, n_per_col)
+    n_cols: ClassVar[int] = 50       
+    n_per_col: ClassVar[int] = 100   
+    y_vals = np.linspace(-50.0, 50.0, n_cols)
+    z_vals = np.linspace(-30.0, 30.0, n_per_col)
     yy, zz = np.meshgrid(y_vals, z_vals)
     positions: ClassVar[np.ndarray] = np.column_stack((
         np.full(yy.size, 300.0),  
         yy.flatten(),             
         zz.flatten()              
     ))
-    action_range: ClassVar[float] = 8
-    rep_par: ClassVar[float] = 1.8
+    action_range: ClassVar[float] = 5
+    rep_par: ClassVar[float] = 1.5
