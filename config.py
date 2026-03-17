@@ -17,20 +17,20 @@ class commands:
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 300
+    n_boids: ClassVar[int] = 400
     boids_in_vel_std: ClassVar[float] = 0.5
     boids_in_pos_std: ClassVar[float] = 10.0
-    action_range: ClassVar[float] = 22.0
+    action_range: ClassVar[float] = 20.0
     fov_angle: ClassVar[float] = np.radians(135)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 300
+    time_steps: ClassVar[int] = 200
 
 
 @dataclass(frozen=True)
 class reynolds_const:
-    coh_par: ClassVar[float] = 10
-    ali_par: ClassVar[float] = 0.25
-    sep_par: ClassVar[float] = 0.25
+    coh_par: ClassVar[float] = 15
+    ali_par: ClassVar[float] = 0.20
+    sep_par: ClassVar[float] = 0.20
     noi_par: ClassVar[float] = 0.3
     max_speed: ClassVar[float] = 5.0
     min_speed: ClassVar[float] = 4.0
@@ -95,15 +95,15 @@ res = np.array([[280.0, y, z] for y, z in product(y_vals, z_vals)])
 
 @dataclass
 class obstacles_const:
-    n_cols: ClassVar[int] = 1       
-    n_per_col: ClassVar[int] = 20   
-    y_vals = np.linspace(-0.0, 0.0, n_cols)
-    z_vals = np.linspace(-40.0, 40.0, n_per_col)
+    n_cols: ClassVar[int] = 50       
+    n_per_col: ClassVar[int] = 100   
+    y_vals = np.linspace(-50.0, 50.0, n_cols)
+    z_vals = np.linspace(-30.0, 30.0, n_per_col)
     yy, zz = np.meshgrid(y_vals, z_vals)
     positions: ClassVar[np.ndarray] = np.column_stack((
         np.full(yy.size, 300.0),  
         yy.flatten(),             
         zz.flatten()              
     ))
-    action_range: ClassVar[float] = 20.0
-    rep_par: ClassVar[float] = 3.0
+    action_range: ClassVar[float] = 5
+    rep_par: ClassVar[float] = 1.5
