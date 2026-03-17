@@ -11,10 +11,10 @@ def versor(vector):
 # Inizializing boids' initial positions and velocities
 class FlockState:
     def __init__(self):
-        self.pos = np.random.normal(
-            loc=0, scale=cfg.glob_const.boids_in_pos_std, size=(cfg.glob_const.n_boids, 3))
+        self.pos = np.random.uniform(low=0, high=40, size=(cfg.glob_const.n_boids, 3)) # np.random.normal(
+            # loc=0, scale=cfg.glob_const.boids_in_pos_std, size=(cfg.glob_const.n_boids, 3))
         self.vel = np.random.normal(
-            loc=cfg.glob_const.min_speed, scale=cfg.glob_const.boids_in_vel_std, size=(cfg.glob_const.n_boids, 3))
+            loc=[3, 0, 0], scale=cfg.glob_const.boids_in_vel_std, size=(cfg.glob_const.n_boids, 3))
         if cfg.glob_const.method == "couzin":
             self.vel = versor(self.vel)*cfg.glob_const.min_speed
 
@@ -22,9 +22,8 @@ class FlockState:
 # Inizializing predator's initial position e velocity
 class Predator:
     def __init__(self):
-        self.pos = np.random.uniform(low=30, high=50,  size=(1, 3))
-        self.vel = np.random.uniform(
-            low=cfg.predator_const.min_speed, high=cfg.predator_const.max_speed, size=(1, 3))
+        self.pos = np.array([[100, 200.0, 0.0]])
+        self.vel = np.array([[0.0, -30.0, 0.0]])
 
 
 # Compute distance vectors matrix (n, n, 3), distance norms matrix (n, n)
@@ -158,8 +157,16 @@ def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_stat
     vel_prov = clamp(vel_prov, sep_vel)
 
     vel_prov = clamp(vel_prov, ali_vel)
+        
+    vel_prov_before_coh = vel_prov.copy()
 
     vel_prov = clamp(vel_prov, coh_vel)
+
+    # Check the difference to see which boids actually applied cohesion
+    coh_diff = np.linalg.norm(vel_prov - vel_prov_before_coh, axis=1)
+    # Using > 1e-6 to avoid floating point precision issues
+    cohesion_count = np.sum(coh_diff > 1e-16) 
+    print(f"Boids actively feeling cohesion: {cohesion_count}")
 
     return vel_prov
 
@@ -185,7 +192,6 @@ def compute_couzin(pos, vel, dist_vects, dist_norms, cos_angles, predator_state)
     has_neighbors_rep = n_neighbors_rep > 0
     has_neighbors_ali = n_neighbors_ali > 0
     has_neighbors_coh = n_neighbors_coh > 0
-    has_no_neighbours = (~has_neighbors_rep) & (~has_neighbors_ali) & (~has_neighbors_coh)
 
     coh_vel = np.zeros_like(vel)
     ali_vel = np.zeros_like(vel)
@@ -319,11 +325,18 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
         (flock_state.vel / speed) * cfg.glob_const.max_speed,
         flock_state.vel
     )
+    
+    #min velocity
+    flock_state.vel = np.where(
+        speed < cfg.glob_const.min_speed,
+        (flock_state.vel / speed) * cfg.glob_const.min_speed,
+        flock_state.vel
+    )
 
-    noise = np.random.normal(
-        scale=cfg.glob_const.boids_in_vel_std/5, loc=0, size=flock_state.vel.shape)
-    norm_flock_vel = np.linalg.norm(flock_state.vel, keepdims=True, axis=1)
-    flock_state.vel = versor(noise+flock_state.vel)*norm_flock_vel
+    # noise = np.random.normal(
+    #     scale=cfg.glob_const.boids_in_vel_std/5, loc=0, size=flock_state.vel.shape)
+    # norm_flock_vel = np.linalg.norm(flock_state.vel, keepdims=True, axis=1)
+    # flock_state.vel = versor(noise+flock_state.vel)*norm_flock_vel
 
     if cfg.commands.predator_bool == True:
         pred_vel_delta = np.zeros_like([[0, 0, 0]])
