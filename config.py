@@ -7,7 +7,7 @@ from itertools import product
 class commands:
     method: ClassVar[str] = "reynolds"
     obstacle_bool: ClassVar[bool] = True
-    predator_bool: ClassVar[bool] = False
+    predator_bool: ClassVar[bool] = True
     moving_camera_bool: ClassVar[bool] = True
     gif_making_bool: ClassVar[bool] = False
     artistic_rendition_bool: ClassVar[bool] = False

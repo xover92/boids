@@ -110,7 +110,14 @@ if cfg.commands.plot_correlation_function:
     plt.axhline(0, color='red', linestyle='--', linewidth=1)
     plt.xlabel('Distance $r$')
     plt.ylabel('Averaged Correlation $C(r)$')
-    plt.title('Final Global Spatial Correlation, with ' + cfg.commands.method.capitalize() + ' Method')
+    if cfg.commands.obstacle_bool and cfg.commands.predator_bool == False:
+        plt.title('Final Global Spatial Correlation, with ' + cfg.commands.method.capitalize() + ' Method and Obstacles')
+    elif cfg.commands.predator_bool and cfg.commands.obstacle_bool == False:
+        plt.title('Final Global Spatial Correlation, with ' + cfg.commands.method.capitalize() + ' Method and Predator')
+    elif cfg.commands.predator_bool and cfg.commands.obstacle_bool:
+        plt.title('Final Global Spatial Correlation, with ' + cfg.commands.method.capitalize() + ' Method, Predator and Obstacles')
+    else:
+        plt.title('Final Global Spatial Correlation, with ' + cfg.commands.method.capitalize() + ' Method')
     plt.legend(loc='upper right', fontsize=8)
     plt.grid(True, alpha=0.3)
     plt.show()
@@ -135,7 +142,14 @@ try:
     plt.ylim(0, 1.05)
     plt.xlabel('Time Step')
     plt.ylabel('Polarization')
-    plt.title('Flock Polarization over Time, with ' + cfg.commands.method.capitalize() + ' Method')
+    if cfg.commands.obstacle_bool and cfg.commands.predator_bool == False:
+        plt.title('Polarization over time, with ' + cfg.commands.method.capitalize() + ' Method and Obstacles')
+    elif cfg.commands.predator_bool and cfg.commands.obstacle_bool == False:
+        plt.title('Polarization over time, with ' + cfg.commands.method.capitalize() + ' Method and Predator')
+    elif cfg.commands.predator_bool and cfg.commands.obstacle_bool:
+        plt.title('Polarization over time, with ' + cfg.commands.method.capitalize() + ' Method, Predator and Obstacles')
+    else:
+        plt.title('Polarization over time, with ' + cfg.commands.method.capitalize() + ' Method')
     plt.grid(True, alpha=0.4)
     plt.legend(loc='upper right', fontsize=8)
     plt.show()
