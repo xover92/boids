@@ -32,14 +32,13 @@ def make_csv(pos_history, vel_history):
     print("File flock_history.csv successfully created")
 
 
-def compute_spatial_correlation(df_original, step, n_bins=50):
+def compute_spatial_correlation(df_original, step, n_bins=300):
     # Filter the dataframe for the specific time step
     df = df_original[df_original['step'] == step]
     
     # Extract coordinates and velocity fluctuations as NumPy arrays
     pos = df[['pos_x', 'pos_y', 'pos_z']].values
     u = df[['u_x', 'u_y', 'u_z']].values
-    c0 = 1
     n=len(df)
     
     r_list=[]
@@ -64,4 +63,24 @@ def compute_spatial_correlation(df_original, step, n_bins=50):
 
     c_r = df_rough.groupby('r_bin', observed=True)['u_iu_j'].mean()
 
+    c_0 = np.mean(np.sum(u**2, axis=1))
+    
+    c_r = c_r / c_0
+    
     return c_r
+
+
+def compute_polarization(df_original, step):
+    df=df_original[df_original['step'] == step]
+    v = df[['vel_x', 'vel_y', 'vel_z']].values
+    n=len(df)
+    
+    total_v_x=df[['vel_x']].sum()
+    total_v_y=df[['vel_y']].sum()
+    total_v_z=df[['vel_z']].sum()
+    
+    polarization = np.sqrt(total_v_x**2+total_v_y**2+total_v_z**2)
+    return polarization
+    
+    
+    

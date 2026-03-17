@@ -29,11 +29,8 @@ class FlockState:
 # Inizializing predator's initial position e velocity
 class Predator:
     def __init__(self):
-        self.pos = np.random.uniform(
-            low=cfg.predator_const.low_spawn, high=cfg.predator_const.high_spawn,  size=(1, 3))
-        self.vel = np.random.uniform(
-            low=cfg.predator_const.min_speed, high=cfg.predator_const.max_speed, size=(1, 3))
-        self.vel = versor(self.vel)*cfg.predator_const.min_speed
+        self.pos = np.array([[100, 200.0, 0.0]])
+        self.vel = np.array([[0.0, -30.0, 0.0]])
 
 
 # Compute distance vectors matrix (n, n, 3), distance norms matrix (n, n)
@@ -160,11 +157,19 @@ def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_stat
 
     prov_vel = clamp(prov_vel, sep_vel)
 
-    prov_vel = clamp(prov_vel, ali_vel)
+    vel_prov = clamp(vel_prov, ali_vel)
+        
+    vel_prov_before_coh = vel_prov.copy()
 
     prov_vel = clamp(prov_vel, coh_vel)
 
-    return prov_vel
+    # Check the difference to see which boids actually applied cohesion
+    coh_diff = np.linalg.norm(vel_prov - vel_prov_before_coh, axis=1)
+    # Using > 1e-6 to avoid floating point precision issues
+    cohesion_count = np.sum(coh_diff > 1e-16) 
+    print(f"Boids actively feeling cohesion: {cohesion_count}")
+
+    return vel_prov
 
 
 # Couzin model
@@ -305,8 +310,14 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
         (flock_state.vel / boids_speed) * cfg.reynolds_const.min_speed,
         flock_state.vel
     )
+    
+    #min velocity
+    flock_state.vel = np.where(
+        boids_speed < cfg.glob_const.min_speed,
+        (flock_state.vel / boids_speed) * cfg.glob_const.min_speed,
+        flock_state.vel
+    )
 
-    # Random white noise
     # noise = np.random.normal(
     #     scale=cfg.glob_const.boids_in_vel_std/5, loc=0, size=flock_state.vel.shape)
     # norm_flock_vel = np.linalg.norm(flock_state.vel, keepdims=True, axis=1)

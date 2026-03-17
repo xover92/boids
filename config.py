@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 from typing import ClassVar
-
+from itertools import product
 
 @dataclass(frozen=True)
 class commands:
@@ -39,9 +39,9 @@ class reynolds_const:
 
 @dataclass(frozen=True)
 class predator_const:
-    max_speed: ClassVar[float] = 30.0
-    min_speed: ClassVar[float] = 6.0
-    max_delta: ClassVar[float] = 3.0
+    max_speed: ClassVar[float] = 40.0
+    min_speed: ClassVar[float] = 0.0
+    max_delta: ClassVar[float] = 10.0
     att_par: ClassVar[float] = 6
     sep_par: ClassVar[float] = 150.0
     dist_par: ClassVar[float] = 80.0
@@ -58,6 +58,10 @@ class couzin_const:
     max_turn_angle: ClassVar[float] = np.radians(2.0)
     speed: ClassVar[float] = 4.0
 
+y_vals = list(range(-160, 160, 5))
+z_vals = list(range(-140, 140, 5))
+
+res = np.array([[280.0, y, z] for y, z in product(y_vals, z_vals)])
 
 # @dataclass
 # class obstacles_const:

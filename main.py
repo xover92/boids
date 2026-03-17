@@ -27,6 +27,19 @@ for t in range(cfg.glob_const.time_steps):
 print(
     f"The datasets have been created: {pos_history.shape}, {pred_pos_history.shape}")
 
+# # Calculate the norm for each boid at each timestep
+# # vel_history shape is (time_steps, n_boids, 3)
+# norms = np.linalg.norm(vel_history, axis=2)
+
+# # Check if all norms are approximately equal to the first one
+# all_equal = np.allclose(norms, norms[0, 0])
+
+# print(f"Are all velocity norms constant? {all_equal}")
+# print(f"Min norm: {norms.min():.4f}, Max norm: {norms.max():.4f}, Average norm: {norms.mean():.4f}")
+
+if cfg.commands.make_csv_bool:
+    sts.make_csv(pos_history, vel_history)
+
 if cfg.commands.gif_making_bool:
     anm.make_gif(pos_history, pred_pos_history)
 
@@ -39,7 +52,7 @@ if cfg.commands.plot_correlation_function:
     #Initialize a list to store the C(r) Series for each step
     all_correlations = []
 
-    cropped_steps = np.arange(max((df_original['step'].unique())+1)/10, max(df_original['step'].unique()))
+    cropped_steps = np.arange(max((df_original['step'].unique())+1)/4, max(df_original['step'].unique()))
     
     all_results_list = []
     
@@ -48,7 +61,7 @@ if cfg.commands.plot_correlation_function:
     #Run the loop using on timesteps
     for step in cropped_steps:
        
-        res = sts.compute_spatial_correlation(df_original, step, n_bins=50)
+        res = sts.compute_spatial_correlation(df_original, step, n_bins=100)
         
     
         step_df = res.reset_index()
