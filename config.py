@@ -9,7 +9,7 @@ class commands:
     obstacle_bool: ClassVar[bool] = True
     predator_bool: ClassVar[bool] = False
     moving_camera_bool: ClassVar[bool] = True
-    gif_making_bool: ClassVar[bool] = True
+    gif_making_bool: ClassVar[bool] = False
     artistic_rendition_bool: ClassVar[bool] = False
     make_csv_bool: ClassVar[bool] = True
     plot_correlation_function: ClassVar[bool] = True
@@ -17,7 +17,7 @@ class commands:
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 400
+    n_boids: ClassVar[int] = 50
     boids_in_vel_std: ClassVar[float] = 0.5
     boids_in_pos_std: ClassVar[float] = 10.0
     action_range: ClassVar[float] = 20.0
@@ -62,36 +62,6 @@ y_vals = list(range(-160, 160, 5))
 z_vals = list(range(-140, 140, 5))
 
 res = np.array([[280.0, y, z] for y, z in product(y_vals, z_vals)])
-
-# @dataclass
-# class obstacles_const:
-#     positions: ClassVar[np.array] = np.array([
-#         [300.0, 0.0, -25.0],
-#         [300.0, 0.0, -25.0],
-#         [300.0, 0.0, -20.0],
-#         [300.0, 0.0, -20.0],
-#         [300.0, 0.0, -15.0],
-#         [300.0, 0.0, -15.0],
-#         [300.0, 0.0, -10.0],
-#         [300.0, 0.0, -10.0],
-#         [300.0, 0.0, -5.0],
-#         [300.0, 0.0, -5.0],
-#         [300.0, 0.0, 0.0],
-#         [300.0, 0.0, 0.0],
-#         [300.0, 0.0, 25.0],
-#         [300.0, 0.0, 25.0],
-#         [300.0, 0.0, 20.0],
-#         [300.0, 0.0, 20.0],
-#         [300.0, 0.0, 15.0],
-#         [300.0, 0.0, 15.0],
-#         [300.0, 0.0, 10.0],
-#         [300.0, 0.0, 10.0],
-#         [300.0, 0.0, 5.0],
-#         [300.0, 0.0, 5.0],
-#     ])
-#     action_range: ClassVar[float] = 15.0
-#     rep_par: ClassVar[float] = 20.0
-
 
 @dataclass
 class obstacles_const:

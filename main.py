@@ -1,3 +1,4 @@
+import dataclasses
 import config as cfg
 import simulation as sml
 import animation as anm
@@ -12,6 +13,26 @@ pos_history = np.zeros((cfg.glob_const.time_steps, cfg.glob_const.n_boids, 3))
 vel_history = np.zeros((cfg.glob_const.time_steps, cfg.glob_const.n_boids, 3))
 pred_pos_history = np.zeros((cfg.glob_const.time_steps, 1, 3))
 pred_vel_history = np.zeros((cfg.glob_const.time_steps, 1, 3))
+
+
+def get_class_vars(cls):
+    # Iterates over the annotations to get the actual values from the class
+    return {field: getattr(cls, field) for field in cls.__annotations__}
+
+
+to_exclude = ['moving_camera_bool', 'gif_making_bool', 'artistic_rendition_bool', 'make_csv_bool',
+              'plot_correlation_function', 'fov_angle', 'cos_fov', 'boids_in_vel_std', 'boids_in_pos_std', 'noi_par', 'method']
+# Merge both classes
+if cfg.commands.method == 'reynolds':
+    all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(
+        cfg.commands), **get_class_vars(cfg.reynolds_const)}
+elif cfg.commands.method == 'couzin':
+    all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(
+        cfg.commands), **get_class_vars(cfg.couzin_const)}
+
+# Create the legend string (filtering out booleans if you want it cleaner)
+params_text = "\n".join(
+    [f"{k}: {v}" for k, v in all_params.items() if k not in to_exclude])
 
 # Main cycle
 for t in range(cfg.glob_const.time_steps):
@@ -45,31 +66,30 @@ if cfg.commands.gif_making_bool:
 
 if cfg.commands.make_csv_bool:
     sts.make_csv(pos_history, vel_history)
-    
+
 if cfg.commands.plot_correlation_function:
     df_original = pd.read_csv("flock_history.csv")
-    
-    #Initialize a list to store the C(r) Series for each step
+
+    # Initialize a list to store the C(r) Series for each step
     all_correlations = []
 
-    cropped_steps = np.arange(max((df_original['step'].unique())+1)/4, max(df_original['step'].unique()))
-    
+    cropped_steps = np.arange(
+        max((df_original['step'].unique())+1)/4, max(df_original['step'].unique()))
+
     all_results_list = []
-    
+
     print(f"Processing {len(cropped_steps)} steps")
 
-    #Run the loop using on timesteps
+    # Run the loop using on timesteps
     for step in cropped_steps:
-       
-        res = sts.compute_spatial_correlation(df_original, step, n_bins=100)
-        
-    
+
+        res = sts.compute_spatial_correlation(df_original, step, n_bins=10)
+
         step_df = res.reset_index()
         step_df.columns = ['r', 'c_r']
-        
+
         all_results_list.append(step_df)
 
-  
     full_data = pd.concat(all_results_list, ignore_index=True)
 
     # Redo the binning and averaging on the global dataset
@@ -77,46 +97,48 @@ if cfg.commands.plot_correlation_function:
     master_bins = np.linspace(0, full_data['r'].max(), 50)
     bin_centers = master_bins[:-1] + np.diff(master_bins) / 2
 
-
-    full_data['master_r_bin'] = pd.cut(full_data['r'], bins=master_bins, labels=bin_centers)
+    full_data['master_r_bin'] = pd.cut(
+        full_data['r'], bins=master_bins, labels=bin_centers)
 
     # final average
     final_c_r = full_data.groupby('master_r_bin', observed=True)['c_r'].mean()
 
     # plotting
     plt.figure(figsize=(10, 6))
-    plt.plot(final_c_r.index, final_c_r.values, marker='s', markersize=4, linestyle='-', color='teal')
+    plt.plot(final_c_r.index, final_c_r.values, marker='s',
+             markersize=4, linestyle='-', color='teal', label=params_text)
     plt.axhline(0, color='red', linestyle='--', linewidth=1)
     plt.xlabel('Distance $r$')
     plt.ylabel('Averaged Correlation $C(r)$')
-    plt.title('Final Global Spatial Correlation (Time-Averaged)')
+    plt.title('Final Global Spatial Correlation, with ' + cfg.commands.method.capitalize() + ' Method')
+    plt.legend(loc='upper right', fontsize=8)
     plt.grid(True, alpha=0.3)
     plt.show()
-    
+
 print("Computing polarization over time...")
 
 try:
     df_original = pd.read_csv("flock_history.csv")
-    
+
     all_steps = df_original['step'].unique()
-    
 
     polarization_over_time = []
-    
+
     for step in all_steps:
         pol = sts.compute_polarization(df_original, step)
         polarization_over_time.append(pol)
-        
+
     plt.figure(figsize=(10, 5))
-    plt.plot(all_steps, polarization_over_time, marker='', linestyle='-', color='darkorange', linewidth=2)
-    
+    plt.plot(all_steps, polarization_over_time, marker='',
+             linestyle='-', color='darkorange', linewidth=2, label=params_text)
+
     plt.ylim(0, 1.05)
     plt.xlabel('Time Step')
     plt.ylabel('Polarization')
-    plt.title('Flock Polarization over Time')
+    plt.title('Flock Polarization over Time, with ' + cfg.commands.method.capitalize() + ' Method')
     plt.grid(True, alpha=0.4)
+    plt.legend(loc='upper right', fontsize=8)
     plt.show()
 
 except FileNotFoundError:
     print("Error. No csv so no polarization")
-

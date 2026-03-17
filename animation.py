@@ -124,5 +124,6 @@ def make_gif(pos_history, pred_pos_history):
 
     # Saving the gif
     print("The gif is loading")
-    ani.save("animation_boids.gif", writer='pillow', fps=10)
+    ani.save("animation_boids.gif", writer='pillow', fps=30)
+    plt.close(fig)
     print("The gif is ready")
