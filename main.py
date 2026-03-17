@@ -21,7 +21,7 @@ def get_class_vars(cls):
 
 
 to_exclude = ['moving_camera_bool', 'gif_making_bool', 'artistic_rendition_bool', 'make_csv_bool',
-              'plot_correlation_function', 'fov_angle', 'cos_fov', 'boids_in_vel_std', 'boids_in_pos_std', 'noi_par', 'method']
+              'plot_correlation_function', 'fov_angle', 'cos_fov', 'boids_in_vel_std', 'boids_in_pos_std', 'noi_par', 'method', 'predator_bool', 'obstacle_bool']
 # Merge both classes
 if cfg.commands.method == 'reynolds':
     all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(
