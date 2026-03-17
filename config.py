@@ -17,20 +17,20 @@ class commands:
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 400
+    n_boids: ClassVar[int] = 300
     boids_in_vel_std: ClassVar[float] = 0.5
     boids_in_pos_std: ClassVar[float] = 10.0
-    action_range: ClassVar[float] = 15.0
+    action_range: ClassVar[float] = 22.0
     fov_angle: ClassVar[float] = np.radians(135)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 400
+    time_steps: ClassVar[int] = 300
 
 
 @dataclass(frozen=True)
 class reynolds_const:
-    coh_par: ClassVar[float] = 3.0
-    ali_par: ClassVar[float] = 0.35
-    sep_par: ClassVar[float] = 0.3
+    coh_par: ClassVar[float] = 10
+    ali_par: ClassVar[float] = 0.25
+    sep_par: ClassVar[float] = 0.25
     noi_par: ClassVar[float] = 0.3
     max_speed: ClassVar[float] = 5.0
     min_speed: ClassVar[float] = 4.0
@@ -59,16 +59,47 @@ class couzin_const:
     speed: ClassVar[float] = 4.0
 
 
+# @dataclass
+# class obstacles_const:
+#     positions: ClassVar[np.array] = np.array([
+#         [300.0, 0.0, -25.0],
+#         [300.0, 0.0, -25.0],
+#         [300.0, 0.0, -20.0],
+#         [300.0, 0.0, -20.0],
+#         [300.0, 0.0, -15.0],
+#         [300.0, 0.0, -15.0],
+#         [300.0, 0.0, -10.0],
+#         [300.0, 0.0, -10.0],
+#         [300.0, 0.0, -5.0],
+#         [300.0, 0.0, -5.0],
+#         [300.0, 0.0, 0.0],
+#         [300.0, 0.0, 0.0],
+#         [300.0, 0.0, 25.0],
+#         [300.0, 0.0, 25.0],
+#         [300.0, 0.0, 20.0],
+#         [300.0, 0.0, 20.0],
+#         [300.0, 0.0, 15.0],
+#         [300.0, 0.0, 15.0],
+#         [300.0, 0.0, 10.0],
+#         [300.0, 0.0, 10.0],
+#         [300.0, 0.0, 5.0],
+#         [300.0, 0.0, 5.0],
+#     ])
+#     action_range: ClassVar[float] = 15.0
+#     rep_par: ClassVar[float] = 20.0
+
+
 @dataclass
 class obstacles_const:
-    positions: ClassVar[np.array] = np.array([
-        [180.0, 180.0, 165.0],
-        [180.0, 170.0, 170.0],
-        [180.0, 180.0, 175.0],
-        [180.0, 170.0, 180.0],
-        [180.0, 180.0, 185.0],
-        [180.0, 170.0, 190.0],
-        [180.0, 180.0, 195.0],
-    ])
-    action_range: ClassVar[float] = 10.0
-    rep_par: ClassVar[float] = 25.0
+    n_cols: ClassVar[int] = 1       
+    n_per_col: ClassVar[int] = 20   
+    y_vals = np.linspace(-0.0, 0.0, n_cols)
+    z_vals = np.linspace(-40.0, 40.0, n_per_col)
+    yy, zz = np.meshgrid(y_vals, z_vals)
+    positions: ClassVar[np.ndarray] = np.column_stack((
+        np.full(yy.size, 300.0),  
+        yy.flatten(),             
+        zz.flatten()              
+    ))
+    action_range: ClassVar[float] = 20.0
+    rep_par: ClassVar[float] = 3.0

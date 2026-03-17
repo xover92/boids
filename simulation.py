@@ -16,8 +16,11 @@ class FlockState:
         #     loc=0, scale=cfg.glob_const.boids_in_pos_std, size=(cfg.glob_const.n_boids, 3))
         self.pos = np.random.uniform(
             low=-10, high=10, size=(cfg.glob_const.n_boids, 3))
+        # self.vel = np.random.normal(
+        #     loc=cfg.reynolds_const.min_speed, scale=cfg.glob_const.boids_in_vel_std, size=(cfg.glob_const.n_boids, 3))
         self.vel = np.random.normal(
-            loc=cfg.reynolds_const.min_speed, scale=cfg.glob_const.boids_in_vel_std, size=(cfg.glob_const.n_boids, 3))
+            loc=[cfg.reynolds_const.min_speed, 0, 0],
+            scale=cfg.glob_const.boids_in_vel_std, size=(cfg.glob_const.n_boids, 3))
         self.vel = versor(self.vel)*cfg.reynolds_const.min_speed
         if cfg.commands.method == "couzin":
             self.vel = versor(self.vel)*cfg.couzin_const.speed
@@ -147,13 +150,13 @@ def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_stat
     repulsion = dist_vects / safe_distance_sq[:, :, np.newaxis]
     sep_vel = (repulsion * mask_3d).sum(axis=1) * cfg.reynolds_const.sep_par
 
-    # Computing clamping for each interaction
-    if cfg.commands.obstacle_bool == True:
-        prov_vel = clamp(prov_vel, compute_obstacle_avoidance(pos))
+    # # Computing clamping for each interaction
+    # if cfg.commands.obstacle_bool == True:
+    #     prov_vel = clamp(prov_vel, compute_obstacle_avoidance(pos))
 
-    if cfg.commands.predator_bool == True:
-        prov_vel = clamp(prov_vel, compute_predator_avoidance(
-            pos, predator_state.pos))
+    # if cfg.commands.predator_bool == True:
+    #     prov_vel = clamp(prov_vel, compute_predator_avoidance(
+    #         pos, predator_state.pos))
 
     prov_vel = clamp(prov_vel, sep_vel)
 
@@ -276,8 +279,19 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
         case _:
             raise ValueError(
                 f"Method '{method}' is invalid. Choose between 'reynolds' or 'couzin'.")
-
+    
     flock_state.vel += boids_prov_vel
+
+     # Computing clamping for each interaction
+    if cfg.commands.obstacle_bool == True:
+        obs_avoid_vel = compute_obstacle_avoidance(flock_state.pos)
+        flock_state.vel += obs_avoid_vel
+
+
+    if cfg.commands.predator_bool == True:
+        pred_avoid_vel = compute_predator_avoidance(flock_state.pos, predator_state.pos)
+        flock_state.vel += boids_prov_vel + pred_avoid_vel
+
 
     # Boids' velocity limit
     boids_speed = np.linalg.norm(flock_state.vel, axis=1, keepdims=True)
