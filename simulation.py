@@ -158,19 +158,19 @@ def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_stat
 
     prov_vel = clamp(prov_vel, sep_vel)
 
-    vel_prov = clamp(vel_prov, ali_vel)
+    prov_vel = clamp(prov_vel, ali_vel)
         
-    vel_prov_before_coh = vel_prov.copy()
+    vel_prov_before_coh = prov_vel.copy()
 
     prov_vel = clamp(prov_vel, coh_vel)
 
-    # Check the difference to see which boids actually applied cohesion
-    coh_diff = np.linalg.norm(vel_prov - vel_prov_before_coh, axis=1)
-    # Using > 1e-6 to avoid floating point precision issues
-    cohesion_count = np.sum(coh_diff > 1e-16) 
-    print(f"Boids actively feeling cohesion: {cohesion_count}")
+    # # Check the difference to see which boids actually applied cohesion
+    # coh_diff = np.linalg.norm(prov_vel - vel_prov_before_coh, axis=1)
+    # # Using > 1e-6 to avoid floating point precision issues
+    # cohesion_count = np.sum(coh_diff > 1e-16) 
+    # print(f"Boids actively feeling cohesion: {cohesion_count}")
 
-    return vel_prov
+    return prov_vel
 
 
 # Couzin model
@@ -314,8 +314,8 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
     
     #min velocity
     flock_state.vel = np.where(
-        boids_speed < cfg.glob_const.min_speed,
-        (flock_state.vel / boids_speed) * cfg.glob_const.min_speed,
+        boids_speed < cfg.reynolds_const.min_speed,
+        (flock_state.vel / boids_speed) * cfg.reynolds_const.min_speed,
         flock_state.vel
     )
 

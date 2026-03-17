@@ -92,4 +92,31 @@ if cfg.commands.plot_correlation_function:
     plt.title('Final Global Spatial Correlation (Time-Averaged)')
     plt.grid(True, alpha=0.3)
     plt.show()
+    
+print("Computing polarization over time...")
+
+try:
+    df_original = pd.read_csv("flock_history.csv")
+    
+    all_steps = df_original['step'].unique()
+    
+
+    polarization_over_time = []
+    
+    for step in all_steps:
+        pol = sts.compute_polarization(df_original, step)
+        polarization_over_time.append(pol)
+        
+    plt.figure(figsize=(10, 5))
+    plt.plot(all_steps, polarization_over_time, marker='', linestyle='-', color='darkorange', linewidth=2)
+    
+    plt.ylim(0, 1.05)
+    plt.xlabel('Time Step')
+    plt.ylabel('Polarization')
+    plt.title('Flock Polarization over Time')
+    plt.grid(True, alpha=0.4)
+    plt.show()
+
+except FileNotFoundError:
+    print("Error. No csv so no polarization")
 
