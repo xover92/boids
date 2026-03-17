@@ -92,7 +92,8 @@ def compute_obstacle_avoidance(pos):
     mask = (obs_dist_norms < cfg.obstacles_const.action_range) & (
         obs_dist_norms > 0)
     mask_3d = mask[:, :, np.newaxis]
-    safe_distance_sq = np.where(obs_dist_norms == 0, 1.0, obs_dist_norms**3)
+    # safe_distance_sq = np.where(obs_dist_norms == 0, 1.0, obs_dist_norms**3)
+    safe_distance_sq = np.where(obs_dist_norms == 0, 1.0, obs_dist_norms**2)
     repulsion = obs_dist_vects / safe_distance_sq[:, :, np.newaxis]
     obs_avoid_vel = (repulsion * mask_3d).sum(axis=1) * \
         cfg.obstacles_const.rep_par

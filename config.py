@@ -17,20 +17,20 @@ class commands:
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 300
+    n_boids: ClassVar[int] = 400
     boids_in_vel_std: ClassVar[float] = 0.5
     boids_in_pos_std: ClassVar[float] = 10.0
-    action_range: ClassVar[float] = 22.0
+    action_range: ClassVar[float] = 20.0
     fov_angle: ClassVar[float] = np.radians(135)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 300
+    time_steps: ClassVar[int] = 200
 
 
 @dataclass(frozen=True)
 class reynolds_const:
     coh_par: ClassVar[float] = 10
-    ali_par: ClassVar[float] = 0.25
-    sep_par: ClassVar[float] = 0.25
+    ali_par: ClassVar[float] = 0.20
+    sep_par: ClassVar[float] = 0.20
     noi_par: ClassVar[float] = 0.3
     max_speed: ClassVar[float] = 5.0
     min_speed: ClassVar[float] = 4.0
@@ -101,5 +101,5 @@ class obstacles_const:
         yy.flatten(),             
         zz.flatten()              
     ))
-    action_range: ClassVar[float] = 20.0
-    rep_par: ClassVar[float] = 3.0
+    action_range: ClassVar[float] = 8
+    rep_par: ClassVar[float] = 1.8
