@@ -10,19 +10,13 @@ def versor(vector):
 
 
 # Inizializing boids' initial positions and velocities
-# introduce normalization for vicsek and couzin
 class FlockState:
     def __init__(self):
-        # self.pos = np.random.normal(
-        #     loc=0, scale=cfg.glob_const.boids_in_pos_std, size=(cfg.glob_const.n_boids, 3))
         self.pos = np.random.uniform(
             low=-10, high=10, size=(cfg.glob_const.n_boids, 3))
-        # self.vel = np.random.normal(
-        #     loc=cfg.reynolds_const.min_speed, scale=cfg.glob_const.boids_in_vel_std, size=(cfg.glob_const.n_boids, 3))
         self.vel = np.random.normal(
             loc=[cfg.reynolds_const.min_speed, 0, 0],
             scale=cfg.glob_const.boids_in_vel_std, size=(cfg.glob_const.n_boids, 3))
-
         if cfg.commands.method == "reynolds":
             self.vel = versor(self.vel)*cfg.reynolds_const.min_speed
         if cfg.commands.method == "couzin":
@@ -34,8 +28,10 @@ class FlockState:
 # Inizializing predator's initial position e velocity
 class Predator:
     def __init__(self):
-        self.pos = np.array([[100, 200.0, 0.0]])
-        self.vel = np.array([[0.0, -30.0, 0.0]])
+        self.pos = np.random.uniform(
+            low=cfg.predator_const.low_spawn, high=cfg.predator_const.high_spawn, size=(1, 3))
+        self.vel = np.random.uniform(
+            low=cfg.predator_const.min_speed, high=cfg.predator_const.max_speed / 5, size=(1, 3))
 
 
 # Compute distance vectors matrix (n, n, 3), distance norms matrix (n, n)
@@ -52,16 +48,45 @@ def compute_distances_and_fov(pos, vel):
 
 
 # Clamping function
-def clamp(vel_prov, vel):
-    norm_prov = np.linalg.norm(vel_prov, axis=1, keepdims=True)
-    capacity = np.maximum(cfg.reynolds_const.max_delta - norm_prov, 0.0)
-    norm = np.linalg.norm(vel, axis=1, keepdims=True)
-    vel_prov += np.where(
-        norm < capacity,
+def clamp(prov_vel, vel):
+    norm_prov_vel = np.linalg.norm(prov_vel, axis=1, keepdims=True)
+    capacity = np.maximum(cfg.reynolds_const.max_delta - norm_prov_vel, 0.0)
+    norm_vel = np.linalg.norm(vel, axis=1, keepdims=True)
+    prov_vel += np.where(
+        norm_vel < capacity,
         vel,
         versor(vel) * capacity
     )
-    return vel_prov
+    return prov_vel
+
+
+def add_directional_noise(target_vel, distribution: str, param_rad: float):
+
+    target_vel_vers = versor(target_vel)
+
+    if distribution.lower() == "gaussian":
+        noise_angles = np.abs(np.random.normal(
+            loc=0.0, scale=param_rad, size=(cfg.glob_const.n_boids, 1)))
+
+    elif distribution.lower() == "uniform":
+        noise_angles = np.random.uniform(
+            low=0.0, high=param_rad, size=(cfg.glob_const.n_boids, 1))
+
+    else:
+        raise ValueError("Distribution must be 'gaussian' or 'uniform'")
+
+    random_vecs = np.random.normal(
+        loc=0.0, scale=1.0, size=(cfg.glob_const.n_boids, 3))
+    dot_rand = (random_vecs * target_vel_vers).sum(axis=1, keepdims=True)
+    perp_noise_vecs = random_vecs - (dot_rand * target_vel_vers)
+    perp_noise_vers = versor(perp_noise_vecs)
+    noisy_target_vers = np.cos(noise_angles) * target_vel_vers + \
+        np.sin(noise_angles) * perp_noise_vers
+
+    target_speed = np.linalg.norm(target_vel, axis=1, keepdims=True)
+    noisy_target_vel = noisy_target_vers * target_speed
+
+    return noisy_target_vel
 
 
 def limit_turn_angle(vel, target_vel, max_angle_rad):
@@ -69,32 +94,29 @@ def limit_turn_angle(vel, target_vel, max_angle_rad):
     vel_vers = versor(vel)
     target_vel_vers = versor(target_vel)
 
-    # Computing angle between previous vel and target vel
     dot_prod = (vel_vers * target_vel_vers).sum(axis=1, keepdims=True)
     dot_prod = np.clip(dot_prod, -1.0, 1.0)
     delta_angle = np.arccos(dot_prod)
     mask_turn = delta_angle > max_angle_rad
 
-    # Computing versor on turning plane and clamping
     perp_vel = target_vel_vers - (dot_prod * vel_vers)
     perp_vel_vers = versor(perp_vel)
     clamped_vel = np.cos(max_angle_rad) * vel_vers + \
-        np.sin(max_angle_rad) * perp_vel_vers
-    final_vel = np.where(mask_turn, clamped_vel, target_vel_vers)
+                  np.sin(max_angle_rad) * perp_vel_vers
+    final_vel_vers = np.where(mask_turn, clamped_vel, target_vel_vers)
 
-    return final_vel
+    return final_vel_vers
 
 
 # Avoiding obstacles
-def compute_obstacle_avoidance(pos):
+def compute_obstacle_avoidance(flock_pos):
 
-    obs_dist_vects = pos[:, np.newaxis, :] - \
+    obs_dist_vects = flock_pos[:, np.newaxis, :] - \
         cfg.obstacles_const.positions[np.newaxis, :, :]
     obs_dist_norms = np.linalg.norm(obs_dist_vects, axis=-1)
     mask = (obs_dist_norms < cfg.obstacles_const.action_range) & (
         obs_dist_norms > 0)
     mask_3d = mask[:, :, np.newaxis]
-    # safe_distance_sq = np.where(obs_dist_norms == 0, 1.0, obs_dist_norms**3)
     safe_distance_sq = np.where(obs_dist_norms == 0, 1.0, obs_dist_norms**2)
     repulsion = obs_dist_vects / safe_distance_sq[:, :, np.newaxis]
     obs_avoid_vel = (repulsion * mask_3d).sum(axis=1) * \
@@ -154,27 +176,21 @@ def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_stat
     repulsion = dist_vects / safe_distance_sq[:, :, np.newaxis]
     sep_vel = (repulsion * mask_3d).sum(axis=1) * cfg.reynolds_const.sep_par
 
-    # # Computing clamping for each interaction
-    # if cfg.commands.obstacle_bool == True:
-    #     prov_vel = clamp(prov_vel, compute_obstacle_avoidance(pos))
-
-    # if cfg.commands.predator_bool == True:
-    #     prov_vel = clamp(prov_vel, compute_predator_avoidance(
-    #         pos, predator_state.pos))
-
+    # Computing clamping for each interaction
     prov_vel = clamp(prov_vel, sep_vel)
 
     prov_vel = clamp(prov_vel, ali_vel)
 
-    vel_prov_before_coh = prov_vel.copy()
-
     prov_vel = clamp(prov_vel, coh_vel)
 
-    # # Check the difference to see which boids actually applied cohesion
-    # coh_diff = np.linalg.norm(prov_vel - vel_prov_before_coh, axis=1)
-    # # Using > 1e-6 to avoid floating point precision issues
-    # cohesion_count = np.sum(coh_diff > 1e-16)
-    # print(f"Boids actively feeling cohesion: {cohesion_count}")
+    if cfg.commands.obstacle_bool == True:
+        avoid_obs_vel = compute_obstacle_avoidance(pos)
+        prov_vel += avoid_obs_vel
+
+    if cfg.commands.predator_bool == True:
+        avoid_pred_vel = compute_predator_avoidance(
+            pos, predator_state.pos)
+        prov_vel += avoid_pred_vel
 
     return prov_vel
 
@@ -251,18 +267,20 @@ def compute_couzin(pos, vel, dist_vects, dist_norms, cos_angles, predator_state)
         )
     )
 
-    # Usa la nuova funzione per trovare la direzione reale limitando l'angolo
+    # White noise 
+    noise_target_vel = add_directional_noise(target_vel, "gaussian", cfg.couzin_const.ang_noi_par)
+
+    # Limiting max steering
     new_vel = limit_turn_angle(
-        vel, target_vel, cfg.couzin_const.max_turn_angle) * cfg.couzin_const.speed
+        vel, noise_target_vel, cfg.couzin_const.max_turn_angle) * cfg.couzin_const.speed
     prov_vel = new_vel - vel
 
     return prov_vel
 
+
 # Vicsek model
+def compute_vicsek(pos, vel, dist_norms, predator_state):
 
-
-def compute_vicsek(pos, vel,dist_norms, predator_state):
-    
     mask = (dist_norms < cfg.vicsek_const.action_range) & (
         dist_norms > 0)
     mask_3d = mask[:, :, np.newaxis]
@@ -286,10 +304,9 @@ def compute_vicsek(pos, vel,dist_norms, predator_state):
 
     gen_avoid_vel = avoid_obs_vel + avoid_pred_vel
 
-    new_vel = ali_vel + gen_avoid_vel + \
-        np.random.uniform(-cfg.vicsek_const.noi_par,
-                          cfg.vicsek_const.noi_par, size=vel.shape)
-    new_vel = versor(new_vel) * cfg.vicsek_const.speed
+    noise_vel = add_directional_noise(ali_vel + gen_avoid_vel, "uniform", cfg.vicsek_const.ang_noi_par)
+
+    new_vel = versor(noise_vel) * cfg.vicsek_const.speed
     prov_vel = new_vel - vel
 
     return prov_vel
@@ -329,20 +346,9 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
                 flock_state.pos, flock_state.vel, dist_norms, predator_state)
         case _:
             raise ValueError(
-                f"Method '{method}' is invalid. Choose between 'reynolds' or 'couzin'.")
+                f"Method '{method}' is invalid. Choose between 'reynolds', 'couzin' or 'vicsek'.")
 
     flock_state.vel += boids_prov_vel
-
-    # Computing clamping for each interaction
-    if cfg.commands.obstacle_bool == True:
-        obs_avoid_vel = compute_obstacle_avoidance(flock_state.pos)
-        flock_state.vel += obs_avoid_vel
-
-    if cfg.commands.predator_bool == True:
-        pred_avoid_vel = compute_predator_avoidance(
-            flock_state.pos, predator_state.pos)
-        flock_state.vel += boids_prov_vel + pred_avoid_vel
-
 
     if cfg.commands.method == "reynolds":
         # Boids' velocity limit
@@ -357,11 +363,6 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
             (flock_state.vel / boids_speed) * cfg.reynolds_const.min_speed,
             flock_state.vel
         )
-
-    # noise = np.random.normal(
-    #     scale=cfg.glob_const.boids_in_vel_std/5, loc=0, size=flock_state.vel.shape)
-    # norm_flock_vel = np.linalg.norm(flock_state.vel, keepdims=True, axis=1)
-    # flock_state.vel = versor(noise+flock_state.vel)*norm_flock_vel
 
     if cfg.commands.predator_bool == True:
         pred_prov_vel = predator_move(
