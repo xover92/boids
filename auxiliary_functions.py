@@ -91,11 +91,8 @@ def plot_polarization_over_time():
 def plot_correlation_function():
     df_original = pd.read_csv("flock_history.csv")
 
-    # Initialize a list to store the C(r) Series for each step
-    all_correlations = []
-
     cropped_steps = np.arange(
-        max((df_original['step'].unique())+1)/4, max(df_original['step'].unique()))
+        max((df_original['step'].unique())+1)//4, max(df_original['step'].unique()))
 
     all_results_list = []
 

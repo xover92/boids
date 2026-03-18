@@ -18,13 +18,13 @@ class commands:
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 200
+    n_boids: ClassVar[int] = 100
     boids_in_vel_std: ClassVar[float] = 0.01
     boids_in_pos_std: ClassVar[float] = 8.0
     action_range: ClassVar[float] = 20.0
     fov_angle: ClassVar[float] = np.radians(135)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 200
+    time_steps: ClassVar[int] = 10
 
 @dataclass(frozen=True)
 class vicsek_const:
@@ -67,9 +67,9 @@ class couzin_const:
 
 @dataclass
 class obstacles_const:
-    n_cols: ClassVar[int] = 3       
+    n_cols: ClassVar[int] = 20       
     n_per_col: ClassVar[int] = 30   
-    y_vals = np.linspace(-1.0, 1.0, n_cols)
+    y_vals = np.linspace(-50.0, 50.0, n_cols)
     z_vals = np.linspace(-30.0, 30.0, n_per_col)
     yy, zz = np.meshgrid(y_vals, z_vals)
     positions: ClassVar[np.ndarray] = np.column_stack((
@@ -77,5 +77,5 @@ class obstacles_const:
         yy.flatten(),             
         zz.flatten()              
     ))
-    action_range: ClassVar[float] = 10
-    rep_par: ClassVar[float] = 3
+    action_range: ClassVar[float] = 40
+    rep_par: ClassVar[float] = 20
