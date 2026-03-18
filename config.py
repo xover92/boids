@@ -13,6 +13,7 @@ class commands:
     artistic_rendition_bool: ClassVar[bool] = False
     make_csv_bool: ClassVar[bool] = True
     plot_correlation_function: ClassVar[bool] = True
+    compute_polarization: ClassVar[bool] = True
 
 
 @dataclass(frozen=True)
