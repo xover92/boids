@@ -10,6 +10,7 @@ def versor(vector):
 
 
 # Inizializing boids' initial positions and velocities
+# introduce normalization for vicsek and couzin
 class FlockState:
     def __init__(self):
         # self.pos = np.random.normal(
@@ -21,9 +22,13 @@ class FlockState:
         self.vel = np.random.normal(
             loc=[cfg.reynolds_const.min_speed, 0, 0],
             scale=cfg.glob_const.boids_in_vel_std, size=(cfg.glob_const.n_boids, 3))
-        self.vel = versor(self.vel)*cfg.reynolds_const.min_speed
+
+        if cfg.commands.method == "reynolds":
+            self.vel = versor(self.vel)*cfg.reynolds_const.min_speed
         if cfg.commands.method == "couzin":
             self.vel = versor(self.vel)*cfg.couzin_const.speed
+        if cfg.commands.method == "vicsek":
+            self.vel = versor(self.vel)*cfg.vicsek_const.speed
 
 
 # Inizializing predator's initial position e velocity
@@ -113,8 +118,9 @@ def compute_predator_avoidance(flock_pos, pred_pos):
 
     return pred_avoid_vel
 
-
 # Reynolds model
+
+
 def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_state):
 
     mask = (dist_norms < cfg.glob_const.action_range) & (
@@ -159,7 +165,7 @@ def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_stat
     prov_vel = clamp(prov_vel, sep_vel)
 
     prov_vel = clamp(prov_vel, ali_vel)
-        
+
     vel_prov_before_coh = prov_vel.copy()
 
     prov_vel = clamp(prov_vel, coh_vel)
@@ -167,7 +173,7 @@ def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_stat
     # # Check the difference to see which boids actually applied cohesion
     # coh_diff = np.linalg.norm(prov_vel - vel_prov_before_coh, axis=1)
     # # Using > 1e-6 to avoid floating point precision issues
-    # cohesion_count = np.sum(coh_diff > 1e-16) 
+    # cohesion_count = np.sum(coh_diff > 1e-16)
     # print(f"Boids actively feeling cohesion: {cohesion_count}")
 
     return prov_vel
@@ -252,6 +258,42 @@ def compute_couzin(pos, vel, dist_vects, dist_norms, cos_angles, predator_state)
 
     return prov_vel
 
+# Vicsek model
+
+
+def compute_vicsek(pos, vel,dist_norms, predator_state):
+    
+    mask = (dist_norms < cfg.vicsek_const.action_range) & (
+        dist_norms > 0)
+    mask_3d = mask[:, :, np.newaxis]
+    n_neighbors = mask.sum(axis=1)
+    has_neighbors = n_neighbors > 0
+
+    ali_vel = np.zeros_like(vel)
+    avoid_obs_vel = np.zeros_like(vel)
+    avoid_pred_vel = np.zeros_like(vel)
+
+    # Alignment
+    align = versor(vel)
+    ali_vel[has_neighbors] = (align*mask_3d).mean(axis=1)[has_neighbors]
+
+    if cfg.commands.obstacle_bool == True:
+        avoid_obs_vel = compute_obstacle_avoidance(pos)
+
+    if cfg.commands.predator_bool == True:
+        avoid_pred_vel = compute_predator_avoidance(
+            pos, predator_state.pos)
+
+    gen_avoid_vel = avoid_obs_vel + avoid_pred_vel
+
+    new_vel = ali_vel + gen_avoid_vel + \
+        np.random.uniform(-cfg.vicsek_const.noi_par,
+                          cfg.vicsek_const.noi_par, size=vel.shape)
+    new_vel = versor(new_vel) * cfg.vicsek_const.speed
+    prov_vel = new_vel - vel
+
+    return prov_vel
+
 
 # Predator dynamic
 def predator_move(flock_pos, pred_pos):
@@ -282,42 +324,39 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
         case "couzin":
             boids_prov_vel = compute_couzin(
                 flock_state.pos, flock_state.vel, dist_vects, dist_norms, cos_angles, predator_state)
+        case "vicsek":
+            boids_prov_vel = compute_vicsek(
+                flock_state.pos, flock_state.vel, dist_norms, predator_state)
         case _:
             raise ValueError(
                 f"Method '{method}' is invalid. Choose between 'reynolds' or 'couzin'.")
-    
+
     flock_state.vel += boids_prov_vel
 
-     # Computing clamping for each interaction
+    # Computing clamping for each interaction
     if cfg.commands.obstacle_bool == True:
         obs_avoid_vel = compute_obstacle_avoidance(flock_state.pos)
         flock_state.vel += obs_avoid_vel
 
-
     if cfg.commands.predator_bool == True:
-        pred_avoid_vel = compute_predator_avoidance(flock_state.pos, predator_state.pos)
+        pred_avoid_vel = compute_predator_avoidance(
+            flock_state.pos, predator_state.pos)
         flock_state.vel += boids_prov_vel + pred_avoid_vel
 
 
-    # Boids' velocity limit
-    boids_speed = np.linalg.norm(flock_state.vel, axis=1, keepdims=True)
-    flock_state.vel = np.where(
-        boids_speed > cfg.reynolds_const.max_speed,
-        (flock_state.vel / boids_speed) * cfg.reynolds_const.max_speed,
-        flock_state.vel
-    )
-    flock_state.vel = np.where(
-        boids_speed < cfg.reynolds_const.min_speed,
-        (flock_state.vel / boids_speed) * cfg.reynolds_const.min_speed,
-        flock_state.vel
-    )
-    
-    #min velocity
-    flock_state.vel = np.where(
-        boids_speed < cfg.reynolds_const.min_speed,
-        (flock_state.vel / boids_speed) * cfg.reynolds_const.min_speed,
-        flock_state.vel
-    )
+    if cfg.commands.method == "reynolds":
+        # Boids' velocity limit
+        boids_speed = np.linalg.norm(flock_state.vel, axis=1, keepdims=True)
+        flock_state.vel = np.where(
+            boids_speed > cfg.reynolds_const.max_speed,
+            (flock_state.vel / boids_speed) * cfg.reynolds_const.max_speed,
+            flock_state.vel
+        )
+        flock_state.vel = np.where(
+            boids_speed < cfg.reynolds_const.min_speed,
+            (flock_state.vel / boids_speed) * cfg.reynolds_const.min_speed,
+            flock_state.vel
+        )
 
     # noise = np.random.normal(
     #     scale=cfg.glob_const.boids_in_vel_std/5, loc=0, size=flock_state.vel.shape)

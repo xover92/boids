@@ -5,11 +5,11 @@ from itertools import product
 
 @dataclass(frozen=True)
 class commands:
-    method: ClassVar[str] = "reynolds"
+    method: ClassVar[str] = "vicsek"  # "reynolds", "couzin", "vicsek"
     obstacle_bool: ClassVar[bool] = True
-    predator_bool: ClassVar[bool] = True
+    predator_bool: ClassVar[bool] = False
     moving_camera_bool: ClassVar[bool] = True
-    gif_making_bool: ClassVar[bool] = False
+    gif_making_bool: ClassVar[bool] = True
     artistic_rendition_bool: ClassVar[bool] = False
     make_csv_bool: ClassVar[bool] = True
     plot_correlation_function: ClassVar[bool] = True
@@ -17,15 +17,20 @@ class commands:
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 50
-    boids_in_vel_std: ClassVar[float] = 0.5
-    boids_in_pos_std: ClassVar[float] = 10.0
+    n_boids: ClassVar[int] = 200
+    boids_in_vel_std: ClassVar[float] = 0.01
+    boids_in_pos_std: ClassVar[float] = 8.0
     action_range: ClassVar[float] = 20.0
     fov_angle: ClassVar[float] = np.radians(135)
     cos_fov: ClassVar[float] = np.cos(fov_angle)
     time_steps: ClassVar[int] = 200
 
-
+@dataclass(frozen=True)
+class vicsek_const:
+    noi_par: ClassVar[float] = 0.1
+    speed: ClassVar[float] = 4.0
+    action_range: ClassVar[float] = 20.0
+    
 @dataclass(frozen=True)
 class reynolds_const:
     coh_par: ClassVar[float] = 15
@@ -58,16 +63,11 @@ class couzin_const:
     max_turn_angle: ClassVar[float] = np.radians(2.0)
     speed: ClassVar[float] = 4.0
 
-y_vals = list(range(-160, 160, 5))
-z_vals = list(range(-140, 140, 5))
-
-res = np.array([[280.0, y, z] for y, z in product(y_vals, z_vals)])
-
 @dataclass
 class obstacles_const:
-    n_cols: ClassVar[int] = 50       
-    n_per_col: ClassVar[int] = 100   
-    y_vals = np.linspace(-50.0, 50.0, n_cols)
+    n_cols: ClassVar[int] = 3       
+    n_per_col: ClassVar[int] = 30   
+    y_vals = np.linspace(-1.0, 1.0, n_cols)
     z_vals = np.linspace(-30.0, 30.0, n_per_col)
     yy, zz = np.meshgrid(y_vals, z_vals)
     positions: ClassVar[np.ndarray] = np.column_stack((
@@ -75,5 +75,5 @@ class obstacles_const:
         yy.flatten(),             
         zz.flatten()              
     ))
-    action_range: ClassVar[float] = 5
-    rep_par: ClassVar[float] = 1.5
+    action_range: ClassVar[float] = 10
+    rep_par: ClassVar[float] = 3
