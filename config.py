@@ -28,10 +28,10 @@ class glob_const:
 
 @dataclass(frozen=True)
 class vicsek_const:
-    noi_par: ClassVar[float] = 0.1
+    ang_noi_par: ClassVar[float] = np.deg2rad(10)
     speed: ClassVar[float] = 4.0
     action_range: ClassVar[float] = 20.0
-    
+
 @dataclass(frozen=True)
 class reynolds_const:
     coh_par: ClassVar[float] = 15
@@ -57,12 +57,13 @@ class predator_const:
 
 @dataclass(frozen=True)
 class couzin_const:
-    noi_par: ClassVar[float] = 0.3
+    ang_noi_par: ClassVar[float] = np.deg2rad(2)
     zoa: ClassVar[float] = 25
     zoo: ClassVar[float] = 20
     zor: ClassVar[float] = 1.0
-    max_turn_angle: ClassVar[float] = np.radians(2.0)
+    max_turn_angle: ClassVar[float] = np.deg2rad(10)
     speed: ClassVar[float] = 4.0
+
 
 @dataclass
 class obstacles_const:
