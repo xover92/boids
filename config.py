@@ -28,13 +28,6 @@ class glob_const:
 
 
 @dataclass(frozen=True)
-class vicsek_const:
-    ang_noi_par: ClassVar[float] = np.deg2rad(10)
-    speed: ClassVar[float] = 4.0
-    action_range: ClassVar[float] = 20.0
-
-
-@dataclass(frozen=True)
 class reynolds_const:
     coh_par: ClassVar[float] = 15
     ali_par: ClassVar[float] = 0.20
@@ -53,6 +46,13 @@ class couzin_const:
     zor: ClassVar[float] = 1.0
     max_turn_angle: ClassVar[float] = np.deg2rad(10)
     speed: ClassVar[float] = 4.0
+
+
+@dataclass(frozen=True)
+class vicsek_const:
+    ang_noi_par: ClassVar[float] = np.deg2rad(10)
+    speed: ClassVar[float] = 4.0
+    action_range: ClassVar[float] = 20.0
 
 
 @dataclass(frozen=True)
