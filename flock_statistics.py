@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import simulation as sml
 
 
 def make_csv(pos_history, vel_history):
@@ -32,37 +32,45 @@ def make_csv(pos_history, vel_history):
     print("File flock_history.csv successfully created")
 
 
-def compute_spatial_correlation(df_original, step, n_bins=50):
-    # Filter the dataframe for the specific time step
-    df = df_original[df_original['step'] == step]
-    
-    # Extract coordinates and velocity fluctuations as NumPy arrays
-    pos = df[['pos_x', 'pos_y', 'pos_z']].values
-    u = df[['u_x', 'u_y', 'u_z']].values
-    n=len(df)
-    
-    r_list=[]
-    uiuj_list=[]
-    
-    for i in range(n):
-        for j in range(i+1, n):
-            dist = np.sqrt((pos[i,0]-pos[j,0])**2 + (pos[i,1]-pos[j,1])**2 + (pos[i,2]-pos[j,2])**2)
-            uiuj= u[i,0]*u[j,0] + u[i,1]*u[j,1] + u[i,2]*u[j,2]
+def compute_spatial_correlation(df_original, step, n_bins=300):
 
-            r_list.append(dist)
-            uiuj_list.append(uiuj)
-    
-    
+    df = df_original[df_original['step'] == step]
+    pos = df[['pos_x', 'pos_y', 'pos_z']].values
+    u_raw = df[['u_x', 'u_y', 'u_z']].values
+    n = len(df)
+    u_vers = sml.versor(u_raw)
+
+    dist_vects = pos[:, np.newaxis, :] - pos[np.newaxis, :, :]
+    dist_matrix = np.linalg.norm(dist_vects, axis=-1)
+    uiuj_matrix = np.inner(u_vers, u_vers)
+
+    i, j = np.triu_indices(n, k=1)
+    r_list = dist_matrix[i, j]
+    uiuj_list = uiuj_matrix[i, j]
+
     df_rough = pd.DataFrame({
-        'r':r_list, 
-        'u_iu_j':uiuj_list
+        'r': r_list,
+        'u_iu_j': uiuj_list
     })
 
     bins = np.linspace(0, df_rough['r'].max(), n_bins)
-    df_rough['r_bin'] = pd.cut(df_rough['r'], bins=bins, labels=bins[:-1] + np.diff(bins)/2)
+    df_rough['r_bin'] = pd.cut(
+        df_rough['r'], bins=bins, labels=bins[:-1] + np.diff(bins)/2)
 
-    c_0 = np.mean(np.sum(u**2, axis=1))
-
-    c_r = (df_rough.groupby('r_bin', observed=True)['u_iu_j'].mean())/c_0
+    c_r = (df_rough.groupby('r_bin', observed=True)['u_iu_j'].mean())
 
     return c_r
+
+
+def compute_polarization(df_original, step):
+    df = df_original[df_original['step'] == step]
+    vel = df[['vel_x', 'vel_y', 'vel_z']].values
+
+    vel_vers = sml.versor(vel)
+
+    pol = np.linalg.norm(np.mean(vel_vers, axis=0))
+
+    return pol
+    
+    
+    
