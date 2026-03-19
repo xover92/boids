@@ -6,11 +6,12 @@ import numpy as np
 import flock_statistics as sts
 
 flock = sml.FlockState()
-predator = sml.Predator()
 pos_history = np.zeros((cfg.glob_const.time_steps, cfg.glob_const.n_boids, 3))
 vel_history = np.zeros((cfg.glob_const.time_steps, cfg.glob_const.n_boids, 3))
+predator = sml.Predator()
 pred_pos_history = np.zeros((cfg.glob_const.time_steps, 1, 3))
 pred_vel_history = np.zeros((cfg.glob_const.time_steps, 1, 3))
+
 
 # Main cycle
 for t in range(cfg.glob_const.time_steps):
@@ -24,7 +25,9 @@ for t in range(cfg.glob_const.time_steps):
     sml.update_flock(flock, predator, cfg.commands.method)
 
 print(
-    f"The datasets have been created: {pos_history.shape}, {pred_pos_history.shape}")
+    f"The flock dataset has been created: {pos_history.shape}")
+if cfg.commands.predator_bool == True:
+    print(f"The predator dataset has been created: {pred_pos_history.shape}")
 
 # aux.verify_all_vel_are_constant(vel_history)
 
