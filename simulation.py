@@ -12,33 +12,23 @@ def versor(vector):
 # Inizializing boids' initial positions and velocities
 class FlockState:
     def __init__(self):
-        self.pos = np.random.uniform(
-            low=-cfg.glob_const.boids_in_pos_ub, high=cfg.glob_const.boids_in_pos_ub, size=(cfg.glob_const.n_boids, 3))
-        if cfg.commands.method == "reynolds":
+        self.pos = np.random.uniform(low=-cfg.glob_const.boids_in_pos_ub, high=cfg.glob_const.boids_in_pos_ub, size=(cfg.glob_const.n_boids, 3))
+        if cfg.commands.predator_bool == True or cfg.commands.obstacle_bool == True:
+            self.vel = np.random.normal( loc=[0, cfg.reynolds_const.min_speed, 0], scale=cfg.reynolds_const.min_speed/5, size=(cfg.glob_const.n_boids, 3))
+        else:
             self.vel = np.random.normal(
-                loc=(0, - cfg.reynolds_const.min_speed, 0),
-                scale=cfg.reynolds_const.min_speed/5, size=(cfg.glob_const.n_boids, 3))
-            self.vel = versor(self.vel)*cfg.reynolds_const.min_speed
-        if cfg.commands.method == "couzin":
-            self.vel = np.random.normal(
-                loc=(cfg.couzin_const.speed),
-                scale=cfg.couzin_const.speed/5, size=(cfg.glob_const.n_boids, 3))
-            self.vel = versor(self.vel)*cfg.couzin_const.speed
-        if cfg.commands.method == "vicsek":
-            self.vel = np.random.normal(
-                loc=(cfg.vicsek_const.speed),
-                scale=cfg.vicsek_const.speed/5, size=(cfg.glob_const.n_boids, 3))
-            self.vel = versor(self.vel)*cfg.vicsek_const.speed
+            loc=[cfg.glob_const.max_speed, cfg.glob_const.max_speed, cfg.glob_const.max_speed],
+            scale=cfg.glob_const.max_speed/5, size=(cfg.glob_const.n_boids, 3))
+            self.vel = versor(self.vel)*cfg.glob_const.max_speed
+           
+    
 
 
 # Inizializing predator's initial position e velocity
 class Predator:
     def __init__(self):
-        self.pos = np.random.uniform(
-            low=cfg.predator_const.low_spawn, high=cfg.predator_const.high_spawn, size=(1, 3))
-        self.vel = np.random.uniform(
-            low=cfg.predator_const.min_speed, high=cfg.predator_const.max_speed / 5, size=(1, 3))
-
+        self.pos = np.array([[0, cfg.glob_const.boids_in_pos_ub * 200, 0]])
+        self.vel = np.array([[0, -cfg.predator_const.max_speed, 0]])
 
 # Compute distance vectors matrix (n, n, 3), distance norms matrix (n, n)
 # and fov matrix (n, n) between boids
@@ -279,7 +269,7 @@ def compute_couzin(pos, vel, dist_vects, dist_norms, cos_angles, predator_state)
 
     # Limiting max steering
     new_vel = limit_turn_angle(
-        vel, noise_target_vel, cfg.couzin_const.max_turn_angle) * cfg.couzin_const.speed
+        vel, noise_target_vel, cfg.couzin_const.max_turn_angle) * cfg.glob_const.max_speed
     prov_vel = new_vel - vel
 
     return prov_vel
@@ -314,7 +304,7 @@ def compute_vicsek(pos, vel, dist_norms, predator_state):
     noise_vel = add_directional_noise(
         ali_vel + gen_avoid_vel, "uniform", cfg.vicsek_const.ang_noi_par)
 
-    new_vel = versor(noise_vel) * cfg.vicsek_const.speed
+    new_vel = versor(noise_vel) * cfg.glob_const.max_speed
     prov_vel = new_vel - vel
 
     return prov_vel
@@ -362,8 +352,8 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
         # Boids' velocity limit
         boids_speed = np.linalg.norm(flock_state.vel, axis=1, keepdims=True)
         flock_state.vel = np.where(
-            boids_speed > cfg.reynolds_const.max_speed,
-            (flock_state.vel / boids_speed) * cfg.reynolds_const.max_speed,
+            boids_speed > cfg.glob_const.max_speed,
+            (flock_state.vel / boids_speed) * cfg.glob_const.max_speed,
             flock_state.vel
         )
         flock_state.vel = np.where(

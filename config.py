@@ -2,39 +2,40 @@ import numpy as np
 from dataclasses import dataclass
 from typing import ClassVar
 
-
 @dataclass(frozen=True)
 class commands:
     method: ClassVar[str] = "reynolds"  # "reynolds", "couzin", "vicsek"
-    obstacle_bool: ClassVar[bool] = True
+    obstacle_bool: ClassVar[bool] = False 
     predator_bool: ClassVar[bool] = False
     moving_camera_bool: ClassVar[bool] = True
     gif_making_bool: ClassVar[bool] = True
-    artistic_rendition_bool: ClassVar[bool] = False
+    artistic_rendition_bool: ClassVar[bool] = True
     make_csv_bool: ClassVar[bool] = False
     plot_correlation_function: ClassVar[bool] = False
     compute_polarization: ClassVar[bool] = False
 
-
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 200
-    boids_in_pos_ub: ClassVar[float] = 5.0
-    fov_angle: ClassVar[float] = np.radians(145)
-    cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 200
-
+    n_boids: ClassVar[int] = 100
+    boids_in_pos_ub: ClassVar[float] = n_boids/40 #fixed
+    fov_angle: ClassVar[float] = np.radians(145) #fixed
+    cos_fov: ClassVar[float] = np.cos(fov_angle) #fixed
+    max_speed: ClassVar[float] = 5.0 #fixed
+    time_steps: ClassVar[int] = 400
 
 @dataclass(frozen=True)
 class reynolds_const:
     coh_par: ClassVar[float] = 10
     ali_par: ClassVar[float] = 0.20
     sep_par: ClassVar[float] = 0.20
-    max_speed: ClassVar[float] = 5.0
-    min_speed: ClassVar[float] = 4.0
-    max_delta: ClassVar[float] = 0.20
     action_range: ClassVar[float] = 20.0
+    min_speed: ClassVar[float] = 4.0
+    max_delta: ClassVar[float] = 0.25
 
+@dataclass(frozen=True)
+class vicsek_const:
+    ang_noi_par: ClassVar[float] = np.deg2rad(10)
+    action_range: ClassVar[float] = 20.0
 
 @dataclass(frozen=True)
 class couzin_const:
@@ -43,8 +44,15 @@ class couzin_const:
     zoo: ClassVar[float] = 20
     zor: ClassVar[float] = 1.0
     max_turn_angle: ClassVar[float] = np.deg2rad(10)
-    speed: ClassVar[float] = 4.0
 
+@dataclass(frozen=True)
+class predator_const:
+    max_speed: ClassVar[float] = 25.0 #fixed
+    min_speed: ClassVar[float] = 3.0 #fixed
+    max_delta: ClassVar[float] = 1.5 #fixed
+    att_par: ClassVar[float] = 2.0 #fixed
+    sep_par: ClassVar[float] = 100.0
+    dist_par: ClassVar[float] = 50.0
 
 @dataclass(frozen=True)
 class vicsek_const:
@@ -67,15 +75,44 @@ class predator_const:
 
 @dataclass
 class obstacles_const:
-    n_cols: ClassVar[int] = 1
-    n_per_col: ClassVar[int] = 30
-    x_vals = np.linspace(0.0, 0.0, n_cols)
-    z_vals = np.linspace(-30.0, 30.0, n_per_col)
-    xx, zz = np.meshgrid(x_vals, z_vals)
-    positions: ClassVar[np.ndarray] = np.column_stack((
-        xx.flatten(),
-        np.full(xx.size, -300.0),
-        zz.flatten()
-    ))
-    action_range: ClassVar[float] = 5
-    rep_par: ClassVar[float] = 2
+    obstacle_type: ClassVar[str] = "wall" # "wall", "column", "custom"
+    obstacle_dim: ClassVar[float] = glob_const.n_boids//5 #fixed
+    match obstacle_type:
+        case "wall":
+            n_cols: ClassVar[int] = obstacle_dim     
+            n_per_col: ClassVar[int] = obstacle_dim   
+            x_vals = np.linspace(-obstacle_dim, obstacle_dim, n_cols)
+            z_vals = np.linspace(-obstacle_dim, obstacle_dim, n_per_col)
+            xx, zz = np.meshgrid(x_vals, z_vals)
+            positions: ClassVar[np.ndarray] = np.column_stack((
+                xx.flatten(),
+                np.full(xx.size, 500.0),             
+                zz.flatten()              
+            ))
+            
+        case "column":
+            n_cols: ClassVar[int] = 1       
+            n_per_col: ClassVar[int] = obstacle_dim 
+            x_vals = np.linspace(0, 0, n_cols)
+            z_vals = np.linspace(-obstacle_dim, obstacle_dim, n_per_col)
+            xx, zz = np.meshgrid(x_vals, z_vals)
+            positions: ClassVar[np.ndarray] = np.column_stack((
+                xx.flatten(),  
+                np.full(xx.size, 500.0),             
+                zz.flatten()              
+            ))
+            
+        case "custom":
+            n_cols: ClassVar[int] = 1       
+            n_per_col: ClassVar[int] = 30   
+            y_vals = np.linspace(-50.0, 50.0, n_cols)
+            z_vals = np.linspace(-30.0, 30.0, n_per_col)
+            yy, zz = np.meshgrid(y_vals, z_vals)
+            positions: ClassVar[np.ndarray] = np.column_stack((
+                np.full(yy.size, 300.0),  
+                yy.flatten(),             
+                zz.flatten()              
+            ))
+            
+    action_range: ClassVar[float] = 40
+    rep_par: ClassVar[float] = 20
