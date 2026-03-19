@@ -45,8 +45,8 @@ def make_gif(pos_history, pred_pos_history):
         n_clouds = 20
         
         for _ in range(n_clouds):
-            cx, cy, cz = (np.random.rand(3) - 0.5) * 100
-            n_fluff = 500
+            cx, cy, cz = (np.random.rand(3) - 0.5) * 1000
+            n_fluff = 1000
 
             fluff_x = cx + np.random.normal(0, 100, n_fluff)
             fluff_y = cy + np.random.normal(0, 20, n_fluff)
@@ -97,7 +97,7 @@ def make_gif(pos_history, pred_pos_history):
         if cfg.commands.moving_camera_bool == True:
             centroid = flock_current_pos.mean(axis=0)
 
-            window = 50.0
+            window = cfg.glob_const.n_boids//4
 
             ax.set_xlim(centroid[0] - window, centroid[0] + window)
             ax.set_ylim(centroid[1] - window, centroid[1] + window)

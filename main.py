@@ -23,8 +23,11 @@ for t in range(cfg.glob_const.time_steps):
 
     sml.update_flock(flock, predator, cfg.commands.method)
 
-print(
-    f"The datasets have been created: {pos_history.shape}, {pred_pos_history.shape}")
+if cfg.commands.predator_bool == True:
+    print(
+        f"The datasets have been created: {pos_history.shape}, {pred_pos_history.shape}")
+if cfg.commands.predator_bool == False:
+    print(f"The dataset has been created: {pos_history.shape}")
 
 # aux.verify_all_vel_are_constant(vel_history)
 
