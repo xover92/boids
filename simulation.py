@@ -12,16 +12,17 @@ def versor(vector):
 # Inizializing boids' initial positions and velocities
 class FlockState:
     def __init__(self):
-        self.pos = np.random.uniform(low=-cfg.glob_const.boids_in_pos_ub, high=cfg.glob_const.boids_in_pos_ub, size=(cfg.glob_const.n_boids, 3))
+        self.pos = np.random.uniform(low=-cfg.glob_const.boids_in_pos_ub,
+                                     high=cfg.glob_const.boids_in_pos_ub, size=(cfg.glob_const.n_boids, 3))
         if cfg.commands.predator_bool == True or cfg.commands.obstacle_bool == True:
-            self.vel = np.random.normal( loc=[0, cfg.reynolds_const.min_speed, 0], scale=cfg.reynolds_const.min_speed/5, size=(cfg.glob_const.n_boids, 3))
+            self.vel = np.random.normal(loc=[0, cfg.reynolds_const.min_speed, 0],
+                                        scale=cfg.reynolds_const.min_speed/5, size=(cfg.glob_const.n_boids, 3))
         else:
             self.vel = np.random.normal(
-            loc=[cfg.glob_const.max_speed, cfg.glob_const.max_speed, cfg.glob_const.max_speed],
-            scale=cfg.glob_const.max_speed/5, size=(cfg.glob_const.n_boids, 3))
+                loc=[cfg.glob_const.max_speed,
+                     cfg.glob_const.max_speed, cfg.glob_const.max_speed],
+                scale=cfg.glob_const.max_speed/5, size=(cfg.glob_const.n_boids, 3))
             self.vel = versor(self.vel)*cfg.glob_const.max_speed
-           
-    
 
 
 # Inizializing predator's initial position e velocity
@@ -32,6 +33,8 @@ class Predator:
 
 # Compute distance vectors matrix (n, n, 3), distance norms matrix (n, n)
 # and fov matrix (n, n) between boids
+
+
 def compute_distances_and_fov(pos, vel):
     dist_vects = pos[:, np.newaxis, :] - pos[np.newaxis, :, :]
     dist_norms = np.linalg.norm(dist_vects, axis=-1)
