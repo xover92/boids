@@ -5,7 +5,7 @@ from typing import ClassVar
 
 @dataclass(frozen=True)
 class commands:
-    method: ClassVar[str] = "reynolds"  # "reynolds", "couzin", "vicsek"
+    method: ClassVar[str] = "couzin"  # "reynolds", "couzin", "vicsek"
     obstacle_bool: ClassVar[bool] = False
     predator_bool: ClassVar[bool] = False
     moving_camera_bool: ClassVar[bool] = True

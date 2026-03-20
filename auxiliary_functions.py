@@ -10,31 +10,10 @@ def get_class_vars(cls):
     return {field: getattr(cls, field) for field in cls.__annotations__}
 
 
-# def names_in_legend():
-#     to_exclude = ['moving_camera_bool', 'gif_making_bool', 'artistic_rendition_bool', 'make_csv_bool',
-#                   'plot_correlation_function', 'fov_angle', 'cos_fov', 'boids_in_vel_std', 'boids_in_pos_std', 'noi_par', 'method', 'predator_bool', 'obstacle_bool']
-#     # Merge both classes
-#     if cfg.commands.method == 'reynolds':
-#         all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(
-#             cfg.commands), **get_class_vars(cfg.reynolds_const)}
-#     elif cfg.commands.method == 'couzin':
-#         all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(
-#             cfg.commands), **get_class_vars(cfg.couzin_const)}
-#     elif cfg.commands.method == 'vicsek':
-#         all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(
-#             cfg.commands), **get_class_vars(cfg.vicsek_const)}
-
-#     # Create the legend string
-#     params_text = "\n".join(
-#         [f"{k}: {v}" for k, v in all_params.items() if k not in to_exclude])
-#     return params_text
-
-
 def names_in_legend():
-    # 1. Questo dizionario funge da lista di INCLUSIONE e da traduttore.
-    # Se un parametro non è qui dentro, NON verrà stampato nella legenda.
+    # Dictionnary
     name_mapping = {
-        # Globali
+        # Globals
         'n_boids': 'Boids number',
         'max_speed': 'Max speed',
         'fov_angle': 'Field of view',
@@ -46,7 +25,7 @@ def names_in_legend():
         'max_delta': 'Max acceleration',
         'min_speed': 'Min speed',
         
-        # Couzin specifici
+        # Couzin 
         'zoa': 'ZOA',
         'zoo': 'ZOO',
         'zor': 'ZOR',
@@ -56,11 +35,8 @@ def names_in_legend():
         'action_range': 'Action range',
         'ang_noi_par': 'Angular noise',
     }
-
-    # 2. Lista delle chiavi che sono in radianti e vanno in gradi
     angles_to_convert = ['max_turn_angle', 'ang_noi_par', 'fov_angle']
 
-    # Uniamo le variabili in base al modello come prima
     if cfg.commands.method == 'reynolds':
         all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(cfg.reynolds_const)}
     elif cfg.commands.method == 'couzin':
@@ -70,13 +46,11 @@ def names_in_legend():
 
     legend_lines = []
 
-    # 3. La magia: iteriamo SOLO sul dizionario di inclusione
+    # Iterating on dictionnary 
     for param_key, display_name in name_mapping.items():
-        # Controlliamo se il parametro esiste nel modello scelto
         if param_key in all_params:
             v = all_params[param_key]
             
-            # Formattazione
             if param_key in angles_to_convert:
                 val_deg = np.degrees(v)
                 val_str = f"{val_deg:.1f}°"
