@@ -5,34 +5,34 @@ from typing import ClassVar
 
 @dataclass(frozen=True)
 class commands:
-    method: ClassVar[str] = "couzin"  # "reynolds", "couzin", "vicsek"
-    obstacle_bool: ClassVar[bool] = False
+    method: ClassVar[str] = "reynolds"  # "reynolds", "couzin", "vicsek"
+    obstacle_bool: ClassVar[bool] = True
     predator_bool: ClassVar[bool] = False
     moving_camera_bool: ClassVar[bool] = True
     gif_making_bool: ClassVar[bool] = True
     artistic_rendition_bool: ClassVar[bool] = False
-    make_csv_bool: ClassVar[bool] = True
-    plot_correlation_function: ClassVar[bool] = True
-    compute_polarization: ClassVar[bool] = True
+    make_csv_bool: ClassVar[bool] = False
+    plot_correlation_function: ClassVar[bool] = False
+    compute_polarization: ClassVar[bool] = False
 
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 250
+    n_boids: ClassVar[int] = 200
     boids_in_pos_ub: ClassVar[float] = n_boids/40  # fixed
     fov_angle: ClassVar[float] = np.radians(145)  # fixed
     cos_fov: ClassVar[float] = np.cos(fov_angle)  # fixed
     max_speed: ClassVar[float] = 4.0  # fixed
-    time_steps: ClassVar[int] = 200
+    time_steps: ClassVar[int] = 400
 
 
 @dataclass(frozen=True)
 class reynolds_const:
-    coh_par: ClassVar[float] = 10
-    ali_par: ClassVar[float] = 0.20
-    sep_par: ClassVar[float] = 0.20
+    coh_par: ClassVar[float] = 5
+    ali_par: ClassVar[float] = 0.075
+    sep_par: ClassVar[float] = 0.025
     action_range: ClassVar[float] = 20.0
-    min_speed: ClassVar[float] = 4.0
+    min_speed: ClassVar[float] = 1.0
     max_delta: ClassVar[float] = 0.25
 
 
@@ -64,17 +64,17 @@ class predator_const:
 @dataclass
 class obstacles_const:
     obstacle_type: ClassVar[str] = "wall"  # "wall", "column", "custom"
-    obstacle_dim: ClassVar[float] = glob_const.n_boids//5  # fixed
+    obstacle_dim: ClassVar[float] = glob_const.n_boids//10  # fixed
     match obstacle_type:
         case "wall":
-            n_cols: ClassVar[int] = obstacle_dim
-            n_per_col: ClassVar[int] = obstacle_dim
+            n_cols: ClassVar[int] = obstacle_dim*2
+            n_per_col: ClassVar[int] = obstacle_dim*2
             x_vals = np.linspace(-obstacle_dim, obstacle_dim, n_cols)
             z_vals = np.linspace(-obstacle_dim, obstacle_dim, n_per_col)
             xx, zz = np.meshgrid(x_vals, z_vals)
             positions: ClassVar[np.ndarray] = np.column_stack((
                 xx.flatten(),
-                np.full(xx.size, 500.0),
+                np.full(xx.size, 300.0),
                 zz.flatten()
             ))
 
@@ -102,5 +102,5 @@ class obstacles_const:
                 zz.flatten()
             ))
 
-    action_range: ClassVar[float] = 40
-    rep_par: ClassVar[float] = 20
+    action_range: ClassVar[float] = 10
+    rep_par: ClassVar[float] = 1
