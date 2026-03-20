@@ -145,7 +145,7 @@ def compute_predator_avoidance(flock_pos, pred_pos):
 
 def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_state):
 
-    mask = (dist_norms < cfg.glob_const.action_range) & (
+    mask = (dist_norms < cfg.reynolds_const.action_range) & (
         dist_norms > 0) & (cos_angles > cfg.glob_const.cos_fov)
     mask_3d = mask[:, :, np.newaxis]
     n_neighbors = mask.sum(axis=1)
@@ -354,8 +354,8 @@ def update_flock(flock_state: FlockState, predator_state: Predator, method: str)
         # Boids' velocity limit
         boids_speed = np.linalg.norm(flock_state.vel, axis=1, keepdims=True)
         flock_state.vel = np.where(
-            boids_speed > cfg.reynolds_const.max_speed,
-            (flock_state.vel / boids_speed) * cfg.reynolds_const.max_speed,
+            boids_speed > cfg.glob_const.max_speed,
+            (flock_state.vel / boids_speed) * cfg.glob_const.max_speed,
             flock_state.vel
         )
         flock_state.vel = np.where(

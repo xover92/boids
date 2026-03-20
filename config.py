@@ -1,30 +1,28 @@
 import numpy as np
 from dataclasses import dataclass
 from typing import ClassVar
-from itertools import product
 
 
 @dataclass(frozen=True)
 class commands:
-    method: ClassVar[str] = "vicsek"  # "reynolds", "couzin", "vicsek"
-    obstacle_bool: ClassVar[bool] = True
+    method: ClassVar[str] = "reynolds"  # "reynolds", "couzin", "vicsek"
+    obstacle_bool: ClassVar[bool] = False 
     predator_bool: ClassVar[bool] = False
     moving_camera_bool: ClassVar[bool] = True
     gif_making_bool: ClassVar[bool] = True
-    artistic_rendition_bool: ClassVar[bool] = False
-    make_csv_bool: ClassVar[bool] = True
-    plot_correlation_function: ClassVar[bool] = True
-
+    artistic_rendition_bool: ClassVar[bool] = True
+    make_csv_bool: ClassVar[bool] = False
+    plot_correlation_function: ClassVar[bool] = False
+    compute_polarization: ClassVar[bool] = False
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 200
-    boids_in_vel_std: ClassVar[float] = 0.01
-    boids_in_pos_std: ClassVar[float] = 8.0
-    action_range: ClassVar[float] = 20.0
-    fov_angle: ClassVar[float] = np.radians(135)
-    cos_fov: ClassVar[float] = np.cos(fov_angle)
-    time_steps: ClassVar[int] = 200
+    n_boids: ClassVar[int] = 100
+    boids_in_pos_ub: ClassVar[float] = n_boids/40 #fixed
+    fov_angle: ClassVar[float] = np.radians(145) #fixed
+    cos_fov: ClassVar[float] = np.cos(fov_angle) #fixed
+    max_speed: ClassVar[float] = 5.0 #fixed
+    time_steps: ClassVar[int] = 400
 
 
 @dataclass(frozen=True)
@@ -32,11 +30,9 @@ class reynolds_const:
     coh_par: ClassVar[float] = 15
     ali_par: ClassVar[float] = 0.20
     sep_par: ClassVar[float] = 0.20
-    noi_par: ClassVar[float] = 0.3
-    max_speed: ClassVar[float] = 5.0
+    action_range: ClassVar[float] = 20.0
     min_speed: ClassVar[float] = 4.0
     max_delta: ClassVar[float] = 0.25
-
 
 @dataclass(frozen=True)
 class couzin_const:
