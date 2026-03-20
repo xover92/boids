@@ -11,23 +11,57 @@ def get_class_vars(cls):
 
 
 def names_in_legend():
-    to_exclude = ['moving_camera_bool', 'gif_making_bool', 'artistic_rendition_bool', 'make_csv_bool',
-                  'plot_correlation_function', 'fov_angle', 'cos_fov', 'boids_in_vel_std', 'boids_in_pos_std', 'noi_par', 'method', 'predator_bool', 'obstacle_bool']
-    # Merge both classes
-    if cfg.commands.method == 'reynolds':
-        all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(
-            cfg.commands), **get_class_vars(cfg.reynolds_const)}
-    elif cfg.commands.method == 'couzin':
-        all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(
-            cfg.commands), **get_class_vars(cfg.couzin_const)}
-    elif cfg.commands.method == 'vicsek':
-        all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(
-            cfg.commands), **get_class_vars(cfg.vicsek_const)}
+    # Dictionnary
+    name_mapping = {
+        # Globals
+        'n_boids': 'Boids number',
+        'max_speed': 'Max speed',
+        'fov_angle': 'Field of view',
+        
+        # Reynolds
+        'coh_par': 'Cohesion par',
+        'ali_par': 'Alignement par',
+        'sep_par': 'Separation par',
+        'max_delta': 'Max acceleration',
+        'min_speed': 'Min speed',
+        
+        # Couzin 
+        'zoa': 'ZOA',
+        'zoo': 'ZOO',
+        'zor': 'ZOR',
+        'max_turn_angle': 'Max steering angle',
+    
+        # Vicsek & Couzin
+        'action_range': 'Action range',
+        'ang_noi_par': 'Angular noise',
+    }
+    angles_to_convert = ['max_turn_angle', 'ang_noi_par', 'fov_angle']
 
-    # Create the legend string
-    params_text = "\n".join(
-        [f"{k}: {v}" for k, v in all_params.items() if k not in to_exclude])
-    return params_text
+    if cfg.commands.method == 'reynolds':
+        all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(cfg.reynolds_const)}
+    elif cfg.commands.method == 'couzin':
+        all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(cfg.couzin_const)}
+    elif cfg.commands.method == 'vicsek':
+        all_params = {**get_class_vars(cfg.glob_const), **get_class_vars(cfg.vicsek_const)}
+
+    legend_lines = []
+
+    # Iterating on dictionnary 
+    for param_key, display_name in name_mapping.items():
+        if param_key in all_params:
+            v = all_params[param_key]
+            
+            if param_key in angles_to_convert:
+                val_deg = np.degrees(v)
+                val_str = f"{val_deg:.1f}°"
+            elif isinstance(v, float):
+                val_str = f"{v:.2f}"
+            else:
+                val_str = str(v)
+
+            legend_lines.append(f"{display_name}: {val_str}")
+
+    return "\n".join(legend_lines)
 
 
 def verify_all_vel_are_constant(vel_history):
@@ -63,25 +97,27 @@ def plot_polarization_over_time():
                  linestyle='-', color='darkorange', linewidth=2, label=legend_text)
 
         plt.ylim(0, 1.05)
-        plt.xlabel('Time Step')
-        plt.ylabel('Polarization')
+        plt.xlabel('Time Step', fontsize=15)
+        plt.ylabel('Polarization', fontsize=15)
+        plt.xticks(fontsize=15)
+        plt.yticks(fontsize=15)
 
         # Set the title based on the presence of obstacles and predators
         if cfg.commands.obstacle_bool and cfg.commands.predator_bool == False:
             plt.title('Polarization over time, with ' +
-                      cfg.commands.method.capitalize() + ' Method and Obstacles')
+                      cfg.commands.method.capitalize() + ' Method and Obstacles', fontsize=15)
         elif cfg.commands.predator_bool and cfg.commands.obstacle_bool == False:
             plt.title('Polarization over time, with ' +
-                      cfg.commands.method.capitalize() + ' Method and Predator')
+                      cfg.commands.method.capitalize() + ' Method and Predator', fontsize=15)
         elif cfg.commands.predator_bool and cfg.commands.obstacle_bool:
             plt.title('Polarization over time, with ' +
-                      cfg.commands.method.capitalize() + ' Method, Predator and Obstacles')
+                      cfg.commands.method.capitalize() + ' Method, Predator and Obstacles', fontsize=15)
         else:
             plt.title('Polarization over time, with ' +
-                      cfg.commands.method.capitalize() + ' Method')
+                      cfg.commands.method.capitalize() + ' Method', fontsize=15)
 
         plt.grid(True, alpha=0.4)
-        plt.legend(loc='upper right', fontsize=8)
+        plt.legend(loc='lower left', fontsize=15)
         plt.show()
 
     except FileNotFoundError:
@@ -126,23 +162,25 @@ def plot_correlation_function():
     plt.plot(final_c_r.index, final_c_r.values, marker='s',
              markersize=4, linestyle='-', color='teal', label=legend_text)
     plt.axhline(0, color='red', linestyle='--', linewidth=1)
-    plt.xlabel('Distance $r$')
-    plt.ylabel('Averaged Correlation $C(r)$')
+    plt.xlabel('Distance $r$', fontsize=15)
+    plt.ylabel('Averaged Correlation $C(r)$', fontsize=15)
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
 
     # Set the title based on the presence of obstacles and predators
     if cfg.commands.obstacle_bool and cfg.commands.predator_bool == False:
         plt.title('Final Global Spatial Correlation, with ' +
-                  cfg.commands.method.capitalize() + ' Method and Obstacles')
+                  cfg.commands.method.capitalize() + ' Method and Obstacles', fontsize=15)
     elif cfg.commands.predator_bool and cfg.commands.obstacle_bool == False:
         plt.title('Final Global Spatial Correlation, with ' +
-                  cfg.commands.method.capitalize() + ' Method and Predator')
+                  cfg.commands.method.capitalize() + ' Method and Predator', fontsize=15)
     elif cfg.commands.predator_bool and cfg.commands.obstacle_bool:
         plt.title('Final Global Spatial Correlation, with ' +
-                  cfg.commands.method.capitalize() + ' Method, Predator and Obstacles')
+                  cfg.commands.method.capitalize() + ' Method, Predator and Obstacles', fontsize=15)
     else:
         plt.title('Final Global Spatial Correlation, with ' +
-                  cfg.commands.method.capitalize() + ' Method')
+                  cfg.commands.method.capitalize() + ' Method', fontsize=15)
 
-    plt.legend(loc='upper right', fontsize=8)
+    plt.legend(loc='lower left', fontsize=15)
     plt.grid(True, alpha=0.3)
     plt.show()

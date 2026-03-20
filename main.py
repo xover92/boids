@@ -6,11 +6,12 @@ import numpy as np
 import flock_statistics as sts
 
 flock = sml.FlockState()
-predator = sml.Predator()
 pos_history = np.zeros((cfg.glob_const.time_steps, cfg.glob_const.n_boids, 3))
 vel_history = np.zeros((cfg.glob_const.time_steps, cfg.glob_const.n_boids, 3))
+predator = sml.Predator()
 pred_pos_history = np.zeros((cfg.glob_const.time_steps, 1, 3))
 pred_vel_history = np.zeros((cfg.glob_const.time_steps, 1, 3))
+
 
 # Main cycle
 for t in range(cfg.glob_const.time_steps):

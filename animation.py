@@ -97,7 +97,7 @@ def make_gif(pos_history, pred_pos_history):
         if cfg.commands.moving_camera_bool == True:
             centroid = flock_current_pos.mean(axis=0)
 
-            window = cfg.glob_const.n_boids//4
+            window = cfg.glob_const.n_boids//20
 
             ax.set_xlim(centroid[0] - window, centroid[0] + window)
             ax.set_ylim(centroid[1] - window, centroid[1] + window)
