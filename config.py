@@ -11,9 +11,9 @@ class commands:
     moving_camera_bool: ClassVar[bool] = True
     gif_making_bool: ClassVar[bool] = True
     artistic_rendition_bool: ClassVar[bool] = False
-    make_csv_bool: ClassVar[bool] = True
-    plot_correlation_function: ClassVar[bool] = True
-    compute_polarization: ClassVar[bool] = True
+    make_csv_bool: ClassVar[bool] = False
+    plot_correlation_function: ClassVar[bool] = False
+    compute_polarization: ClassVar[bool] = False
 
 
 @dataclass(frozen=True)
@@ -67,8 +67,8 @@ class obstacles_const:
     obstacle_dim: ClassVar[float] = glob_const.n_boids // 5  # fixed
     match obstacle_type:
         case "wall":
-            n_cols: ClassVar[int] = obstacle_dim
-            n_per_col: ClassVar[int] = obstacle_dim
+            n_cols: ClassVar[int] = obstacle_dim*2
+            n_per_col: ClassVar[int] = obstacle_dim*2
             x_vals = np.linspace(-obstacle_dim, obstacle_dim, n_cols)
             z_vals = np.linspace(-obstacle_dim, obstacle_dim, n_per_col)
             xx, zz = np.meshgrid(x_vals, z_vals)
