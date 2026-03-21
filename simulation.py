@@ -15,13 +15,14 @@ class FlockState:
         self.pos = np.random.uniform(low=-cfg.glob_const.boids_in_pos_ub,
                                      high=cfg.glob_const.boids_in_pos_ub, size=(cfg.glob_const.n_boids, 3))
         if cfg.commands.predator_bool == True or cfg.commands.obstacle_bool == True:
-            self.vel = np.random.normal(loc=[0, cfg.reynolds_const.min_speed, 0],
-                                        scale=cfg.reynolds_const.min_speed/5, size=(cfg.glob_const.n_boids, 3))
+            self.vel = np.random.normal(loc=[0, cfg.glob_const.max_speed, 0],
+                                        scale=cfg.glob_const.max_speed/10, size=(cfg.glob_const.n_boids, 3))
+            self.vel = versor(self.vel)*cfg.glob_const.max_speed
         else:
             self.vel = np.random.normal(
                 loc=[cfg.glob_const.max_speed,
                      cfg.glob_const.max_speed, cfg.glob_const.max_speed],
-                scale=cfg.glob_const.max_speed/5, size=(cfg.glob_const.n_boids, 3))
+                scale=cfg.glob_const.max_speed/10, size=(cfg.glob_const.n_boids, 3))
             self.vel = versor(self.vel)*cfg.glob_const.max_speed
 
 
@@ -190,6 +191,13 @@ def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_stat
         avoid_pred_vel = compute_predator_avoidance(
             pos, predator_state.pos)
         prov_vel += avoid_pred_vel
+
+    prov_vel = np.where(
+        np.linalg.norm(prov_vel, axis=1,
+                       keepdims=True) > cfg.reynolds_const.max_delta,
+        versor(prov_vel) * cfg.reynolds_const.max_delta,
+        prov_vel
+    )
 
     return prov_vel
 

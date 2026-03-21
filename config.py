@@ -5,9 +5,9 @@ from typing import ClassVar
 
 @dataclass(frozen=True)
 class commands:
-    method: ClassVar[str] = "couzin"  # "reynolds", "couzin", "vicsek"
+    method: ClassVar[str] = "reynolds"  # "reynolds", "couzin", "vicsek"
     obstacle_bool: ClassVar[bool] = False
-    predator_bool: ClassVar[bool] = False
+    predator_bool: ClassVar[bool] = True
     moving_camera_bool: ClassVar[bool] = True
     gif_making_bool: ClassVar[bool] = True
     artistic_rendition_bool: ClassVar[bool] = False
@@ -18,11 +18,11 @@ class commands:
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 250
+    n_boids: ClassVar[int] = 200
     boids_in_pos_ub: ClassVar[float] = n_boids/40  # fixed
     fov_angle: ClassVar[float] = np.radians(145)  # fixed
     cos_fov: ClassVar[float] = np.cos(fov_angle)  # fixed
-    max_speed: ClassVar[float] = 4.0  # fixed
+    max_speed: ClassVar[float] = 3.0  # fixed
     time_steps: ClassVar[int] = 200
 
 
@@ -31,9 +31,9 @@ class reynolds_const:
     coh_par: ClassVar[float] = 10
     ali_par: ClassVar[float] = 0.20
     sep_par: ClassVar[float] = 0.20
-    action_range: ClassVar[float] = 20.0
-    min_speed: ClassVar[float] = 4.0
-    max_delta: ClassVar[float] = 0.25
+    action_range: ClassVar[float] = 10.0
+    min_speed: ClassVar[float] = 2.0
+    max_delta: ClassVar[float] = 0.5
 
 
 @dataclass(frozen=True)
@@ -45,17 +45,17 @@ class vicsek_const:
 @dataclass(frozen=True)
 class couzin_const:
     ang_noi_par: ClassVar[float] = np.deg2rad(0.1)
-    zoa: ClassVar[float] = 15
+    zoa: ClassVar[float] = 20
     zoo: ClassVar[float] = 10
-    zor: ClassVar[float] = 1.0
-    max_turn_angle: ClassVar[float] = np.deg2rad(1)
+    zor: ClassVar[float] = 1
+    max_turn_angle: ClassVar[float] = np.deg2rad(5)
 
 
 @dataclass(frozen=True)
 class predator_const:
     max_speed: ClassVar[float] = 25.0  # fixed
-    min_speed: ClassVar[float] = 3.0  # fixed
-    max_delta: ClassVar[float] = 1.5  # fixed
+    min_speed: ClassVar[float] = 0.0  # fixed
+    max_delta: ClassVar[float] = 2.5  # fixed
     att_par: ClassVar[float] = 2.0  # fixed
     sep_par: ClassVar[float] = 100.0
     dist_par: ClassVar[float] = 50.0
@@ -63,8 +63,8 @@ class predator_const:
 
 @dataclass
 class obstacles_const:
-    obstacle_type: ClassVar[str] = "wall"  # "wall", "column", "custom"
-    obstacle_dim: ClassVar[float] = glob_const.n_boids//5  # fixed
+    obstacle_type: ClassVar[str] = "column"  # "wall", "column", "custom"
+    obstacle_dim: ClassVar[float] = glob_const.n_boids // 5  # fixed
     match obstacle_type:
         case "wall":
             n_cols: ClassVar[int] = obstacle_dim
@@ -74,7 +74,7 @@ class obstacles_const:
             xx, zz = np.meshgrid(x_vals, z_vals)
             positions: ClassVar[np.ndarray] = np.column_stack((
                 xx.flatten(),
-                np.full(xx.size, 500.0),
+                np.full(xx.size, 300.0),
                 zz.flatten()
             ))
 
@@ -86,7 +86,7 @@ class obstacles_const:
             xx, zz = np.meshgrid(x_vals, z_vals)
             positions: ClassVar[np.ndarray] = np.column_stack((
                 xx.flatten(),
-                np.full(xx.size, 500.0),
+                np.full(xx.size, 300.0),
                 zz.flatten()
             ))
 
@@ -102,5 +102,5 @@ class obstacles_const:
                 zz.flatten()
             ))
 
-    action_range: ClassVar[float] = 40
-    rep_par: ClassVar[float] = 20
+    action_range: ClassVar[float] = 10
+    rep_par: ClassVar[float] = 2
