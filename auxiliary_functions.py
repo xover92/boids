@@ -137,7 +137,7 @@ def plot_correlation_function():
     # Run the loop using on timesteps
     for step in cropped_steps:
 
-        res = sts.compute_spatial_correlation(df_original, step, n_bins=10)
+        res = sts.compute_spatial_correlation(df_original, step, n_bins=50)
 
         step_df = res.reset_index()
         step_df.columns = ['r', 'c_r']
@@ -148,7 +148,7 @@ def plot_correlation_function():
 
     # Redo the binning and averaging on the global dataset
 
-    master_bins = np.linspace(0, full_data['r'].max(), 50)
+    master_bins = np.linspace(0, full_data['r'].max(), 20)
     bin_centers = master_bins[:-1] + np.diff(master_bins) / 2
 
     full_data['master_r_bin'] = pd.cut(

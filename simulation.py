@@ -192,8 +192,13 @@ def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_stat
             pos, predator_state.pos)
         prov_vel += avoid_pred_vel
 
-    prov_vel = versor(prov_vel) * cfg.reynolds_const.max_delta
-    
+    prov_vel = np.where(
+        np.linalg.norm(prov_vel, axis=1,
+                       keepdims=True) > cfg.reynolds_const.max_delta,
+        versor(prov_vel) * cfg.reynolds_const.max_delta,
+        prov_vel
+    )
+
     return prov_vel
 
 
