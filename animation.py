@@ -97,7 +97,7 @@ def make_gif(pos_history, pred_pos_history):
         if cfg.commands.moving_camera_bool == True:
             centroid = flock_current_pos.mean(axis=0)
 
-            window = cfg.glob_const.n_boids//15
+            window = cfg.glob_const.n_boids//10
 
             ax.set_xlim(centroid[0] - window, centroid[0] + window)
             ax.set_ylim(centroid[1] - window, centroid[1] + window)
@@ -105,11 +105,16 @@ def make_gif(pos_history, pred_pos_history):
 
         return flock_scatter, pred_scatter
 
-    # Creating the gif
+        # Creating the gif
     ani = animation.FuncAnimation(
-        fig, animate, frames=cfg.glob_const.time_steps, interval=100, blit=False)
+        fig, animate, frames=cfg.glob_const.time_steps, interval=33, blit=False)
 
     print("The gif is loading")
-    ani.save("animation_boids.gif", writer='pillow', fps=30)
+    #start=time.time()
+    Writer = animation.FFMpegWriter(fps=30, bitrate=1000, extra_args=['-vcodec', 'libx264', '-crf', '18'])
+    ani.save("animation_boids.mp4", writer=Writer, dpi=72)
+    #ani.save("animation_boids.gif", writer='pillow', fps=30, dpi=72)
     plt.close(fig)
+    #time_taken = time.time() - start
+    #print(f"The gif took {time_taken:.2f} seconds to be created")
     print("The gif is ready")

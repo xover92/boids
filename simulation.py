@@ -1,8 +1,10 @@
 import config as cfg
 import numpy as np
-
+from numba import njit
 
 # General function to compute versors
+
+
 def versor(vector):
     safe_norm = np.maximum(np.linalg.norm(
         vector, keepdims=True, axis=1), 1e-10)
@@ -16,7 +18,7 @@ class FlockState:
                                      high=cfg.glob_const.boids_in_pos_ub, size=(cfg.glob_const.n_boids, 3))
         if cfg.commands.predator_bool == True or cfg.commands.obstacle_bool == True:
             self.vel = np.random.normal(loc=[0, cfg.glob_const.max_speed, 0],
-                                        scale=cfg.glob_const.max_speed/10, size=(cfg.glob_const.n_boids, 3))
+                                        scale=cfg.glob_const.max_speed/1000, size=(cfg.glob_const.n_boids, 3))
             self.vel = versor(self.vel)*cfg.glob_const.max_speed
         else:
             self.vel = np.random.normal(
@@ -192,8 +194,9 @@ def compute_reynolds(pos, vel, dist_vects, dist_norms, cos_angles, predator_stat
             pos, predator_state.pos)
         prov_vel += avoid_pred_vel
 
-    prov_vel = versor(prov_vel) * cfg.reynolds_const.max_delta
-    
+    prov_vel = np.where(prov_vel > cfg.reynolds_const.max_delta, versor(
+        prov_vel) * cfg.reynolds_const.max_delta, prov_vel)
+
     return prov_vel
 
 
