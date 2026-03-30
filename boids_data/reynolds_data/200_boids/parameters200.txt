@@ -1,0 +1,51 @@
+class commands:
+    method: ClassVar[str] = "reynolds"  # "reynolds", "couzin", "vicsek"
+    obstacle_bool: ClassVar[bool] = False
+    predator_bool: ClassVar[bool] = False
+class glob_const:
+    n_boids: ClassVar[int] = 200
+class reynolds_const:
+    coh_par: ClassVar[float] = 5.5
+    ali_par: ClassVar[float] = 0.050
+    sep_par: ClassVar[float] = 0.025
+    action_range: ClassVar[float] = 20.0
+    min_speed: ClassVar[float] = 1.0
+    max_delta: ClassVar[float] = 0.25
+class predator_const:
+    sep_par: ClassVar[float] = 0.6
+    dist_par: ClassVar[float] = 40.0
+class obstacles_const:
+    obstacle_type: ClassVar[str] = "column"  # "wall", "column", "custom"
+        case "column":
+            n_cols: ClassVar[int] = 1
+            n_per_col: ClassVar[int] = obstacle_dim*3
+            x_vals = np.linspace(0, 0, n_cols)
+            z_vals = np.linspace(-obstacle_dim, obstacle_dim, n_per_col)
+            xx, zz = np.meshgrid(x_vals, z_vals)
+            positions: ClassVar[np.ndarray] = np.column_stack((
+                xx.flatten(),
+                np.full(xx.size, 200.0),
+                zz.flatten()
+            ))
+    action_range: ClassVar[float] = 5
+    rep_par: ClassVar[float] = 0.07
+class obstacles_const:
+    obstacle_type: ClassVar[str] = "wall"  # "wall", "column", "custom"
+    obstacle_dim: ClassVar[float] = glob_const.n_boids//10  # fixed
+    match obstacle_type:
+        case "wall":
+            n_cols: ClassVar[int] = obstacle_dim*2
+            n_per_col: ClassVar[int] = obstacle_dim*2
+            x_vals = np.linspace(-obstacle_dim, obstacle_dim, n_cols)
+            z_vals = np.linspace(-obstacle_dim, obstacle_dim, n_per_col)
+            xx, zz = np.meshgrid(x_vals, z_vals)
+            positions: ClassVar[np.ndarray] = np.column_stack((
+                xx.flatten(),
+                np.full(xx.size, 400.0),
+                zz.flatten()
+            ))
+    action_range: ClassVar[float] = 30
+    rep_par: ClassVar[float] = 0.005
+
+
+
