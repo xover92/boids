@@ -6,8 +6,8 @@ from typing import ClassVar
 @dataclass(frozen=True)
 class commands:
     method: ClassVar[str] = "reynolds"  # "reynolds", "couzin", "vicsek"
-    obstacle_bool: ClassVar[bool] = True
-    predator_bool: ClassVar[bool] = False
+    obstacle_bool: ClassVar[bool] = False
+    predator_bool: ClassVar[bool] = True
     moving_camera_bool: ClassVar[bool] = True
     gif_making_bool: ClassVar[bool] = True
     artistic_rendition_bool: ClassVar[bool] = False
@@ -18,7 +18,7 @@ class commands:
 
 @dataclass(frozen=True)
 class glob_const:
-    n_boids: ClassVar[int] = 1000
+    n_boids: ClassVar[int] = 200
     boids_in_pos_ub: ClassVar[float] = n_boids/40  # fixed
     fov_angle: ClassVar[float] = np.radians(145)  # fixed
     cos_fov: ClassVar[float] = np.cos(fov_angle)  # fixed
@@ -29,8 +29,8 @@ class glob_const:
 @dataclass(frozen=True)
 class reynolds_const:
     coh_par: ClassVar[float] = 5.5
-    ali_par: ClassVar[float] = 0.8
-    sep_par: ClassVar[float] = 0.5
+    ali_par: ClassVar[float] = 0.050
+    sep_par: ClassVar[float] = 0.025
     action_range: ClassVar[float] = 20.0
     min_speed: ClassVar[float] = 1.0
     max_delta: ClassVar[float] = 0.25
@@ -57,8 +57,8 @@ class predator_const:
     min_speed: ClassVar[float] = 3.0  # fixed
     max_delta: ClassVar[float] = 1.5  # fixed
     att_par: ClassVar[float] = 2.0  # fixed
-    sep_par: ClassVar[float] = 5
-    dist_par: ClassVar[float] = 60.0
+    sep_par: ClassVar[float] = 0.6
+    dist_par: ClassVar[float] = 40.0
 
 
 @dataclass
@@ -102,5 +102,5 @@ class obstacles_const:
                 zz.flatten()
             ))
 
-    action_range: ClassVar[float] = 35
-    rep_par: ClassVar[float] = 0.0045
+    action_range: ClassVar[float] = 30
+    rep_par: ClassVar[float] = 0.005
