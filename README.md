@@ -17,3 +17,6 @@ In order to get the desired outcome, one must modify the config.py file accordin
 
 ## Data and Gifs
 The collected data and the gifs are inside the data folder, and can be seen by the reader. The reader might also produce new ones themselves by using the program.
+
+## Report
+For more informations, both regarding our results and the theoretical background of the model, as well as a discussion about the reults and the further developements of the field, please refer to the report.pdf file in this repository.
